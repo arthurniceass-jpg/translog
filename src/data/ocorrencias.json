@@ -1,0 +1,7 @@
+[
+  { "id": "o1", "titulo": "Revisão de freios", "veiculoId": "v3", "motoristaId": "m1", "tipo": "Manutenção", "descricao": "Troca de pastilhas de freio e revisão geral.", "data": "2026-09-10", "status": "Resolvida" },
+  { "id": "o2", "titulo": "Atraso na entrega", "veiculoId": "v2", "motoristaId": "m3", "tipo": "Atraso", "descricao": "Entrega atrasada por congestionamento na BR-101.", "data": "2026-09-22", "status": "Resolvida" },
+  { "id": "o3", "titulo": "Colisão no pátio", "veiculoId": "v6", "motoristaId": "m5", "tipo": "Acidente", "descricao": "Colisão leve na traseira durante manobra no pátio.", "data": "2026-09-20", "status": "Aberta" },
+  { "id": "o4", "titulo": "Ar-condicionado com defeito", "veiculoId": "v4", "motoristaId": "m2", "tipo": "Manutenção", "descricao": "Ar-condicionado da cabine sem funcionar.", "data": "2026-09-25", "status": "Aberta" },
+  { "id": "o5", "titulo": "Documentação vencida", "veiculoId": "v1", "motoristaId": "m2", "tipo": "Outro", "descricao": "Licenciamento do veículo vencido, aguardando regularização.", "data": "2026-09-15", "status": "Em análise" }
+]

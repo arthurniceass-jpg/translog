@@ -1,0 +1,7 @@
+[
+  { "id": "m1", "nome": "Carlos Andrade", "cpf": "123.456.789-01", "cnh": "01234567890", "categoria": "E", "telefone": "(81) 99999-0001", "status": "Disponível" },
+  { "id": "m2", "nome": "Fernanda Lima", "cpf": "234.567.890-12", "cnh": "11234567891", "categoria": "D", "telefone": "(81) 99999-0002", "status": "Em viagem" },
+  { "id": "m3", "nome": "Roberto Souza", "cpf": "345.678.901-23", "cnh": "21234567892", "categoria": "C", "telefone": "(81) 99999-0003", "status": "Disponível" },
+  { "id": "m4", "nome": "Juliana Castro", "cpf": "456.789.012-34", "cnh": "31234567893", "categoria": "B", "telefone": "(81) 99999-0004", "status": "Inativo" },
+  { "id": "m5", "nome": "Marcos Vinícius", "cpf": "567.890.123-45", "cnh": "41234567894", "categoria": "E", "telefone": "(81) 99999-0005", "status": "Em viagem" }
+]

@@ -1,0 +1,8 @@
+[
+  { "id": "v1", "placa": "ABC1D23", "marca": "Volvo", "modelo": "FH 540", "ano": 2021, "status": "Disponível" },
+  { "id": "v2", "placa": "EFG4H56", "marca": "Mercedes-Benz", "modelo": "Sprinter", "ano": 2020, "status": "Em uso" },
+  { "id": "v3", "placa": "IJK7L89", "marca": "Scania", "modelo": "R 450", "ano": 2019, "status": "Manutenção" },
+  { "id": "v4", "placa": "MNO0P12", "marca": "Fiat", "modelo": "Fiorino", "ano": 2022, "status": "Disponível" },
+  { "id": "v5", "placa": "QRS3T45", "marca": "Honda", "modelo": "CG 160", "ano": 2023, "status": "Em uso" },
+  { "id": "v6", "placa": "UVW6X78", "marca": "Volkswagen", "modelo": "Constellation", "ano": 2018, "status": "Disponível" }
+]
