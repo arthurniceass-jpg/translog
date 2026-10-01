@@ -61,7 +61,7 @@ export function Motoristas() {
       <div className="card">
         {lista.length === 0 ? (
           <EmptyState
-            emoji="🧑‍✈️"
+            icon="users"
             titulo={motoristas.length === 0 ? "Nenhum motorista cadastrado" : "Nenhum resultado"}
             texto={motoristas.length === 0 ? "Clique em “Novo motorista” para começar." : "Tente ajustar a busca ou o filtro."}
           />

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Icon } from "./Icons";
 
 /**
  * Página placeholder — usada nos módulos que ainda serão implementados
@@ -17,7 +18,7 @@ export function Placeholder({ titulo, dono, descricao }) {
         </div>
       </div>
       <div className="card card-pad empty">
-        <div className="empty-emoji">🚧</div>
+        <Icon name="tool" size={44} className="empty-ico" strokeWidth={1.5} />
         <h3>Em construção</h3>
         <p>
           Este módulo será implementado por <strong>{dono}</strong>, seguindo o

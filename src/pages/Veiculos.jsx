@@ -61,7 +61,7 @@ export function Veiculos() {
       <div className="card">
         {lista.length === 0 ? (
           <EmptyState
-            emoji="🚚"
+            icon="truck"
             titulo={veiculos.length === 0 ? "Nenhum veículo cadastrado" : "Nenhum resultado"}
             texto={veiculos.length === 0 ? "Clique em “Novo veículo” para começar." : "Tente ajustar a busca ou o filtro."}
           />

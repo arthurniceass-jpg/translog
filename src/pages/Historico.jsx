@@ -72,7 +72,7 @@ export function Historico() {
 
       <div className="card">
         {lista.length === 0 ? (
-          <EmptyState emoji="🗂️" titulo="Nenhuma ocorrência no período" texto="Ajuste os filtros para ver o histórico." />
+          <EmptyState icon="history" titulo="Nenhuma ocorrência no período" texto="Ajuste os filtros para ver o histórico." />
         ) : (
           <div className="table-wrap">
             <table className="table">

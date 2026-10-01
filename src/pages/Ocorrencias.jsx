@@ -69,7 +69,7 @@ export function Ocorrencias() {
       <div className="card">
         {lista.length === 0 ? (
           <EmptyState
-            emoji="📋"
+            icon="alert"
             titulo={ocorrencias.length === 0 ? "Nenhuma ocorrência registrada" : "Nenhum resultado"}
             texto={ocorrencias.length === 0 ? "Clique em “Nova ocorrência” para começar." : "Tente ajustar a busca ou os filtros."}
           />
