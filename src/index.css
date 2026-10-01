@@ -61,7 +61,28 @@ h1, h2, h3 { line-height: 1.2; color: var(--heading); }
 .side-link:hover { background: rgba(255, 255, 255, 0.07); color: #fff; }
 .side-link.active { background: var(--blue); color: #fff; box-shadow: 0 6px 16px rgba(0, 123, 255, 0.35); }
 .side-ico { font-size: 1.1rem; width: 1.3rem; text-align: center; }
-.sidebar-foot { padding: 1rem 1.1rem; font-size: 0.72rem; letter-spacing: 0.05em; color: #5f7399; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.sidebar-foot { padding: 0.9rem 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.side-user { display: flex; align-items: center; gap: 0.6rem; }
+.side-user-info { min-width: 0; flex: 1; }
+.side-user-name { display: block; color: #fff; font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side-user-mail { display: block; color: #7e93b8; font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side-logout { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; background: rgba(255, 255, 255, 0.07); border: 0; color: #aebcd6; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+.side-logout:hover { background: rgba(220, 38, 38, 0.2); color: #ff8686; }
+.side-login-link { display: flex; align-items: center; gap: 0.5rem; color: #aebcd6; font-weight: 600; font-size: 0.9rem; }
+.side-login-link:hover { color: #fff; }
+
+/* ===== Telas de autenticação ===== */
+.auth-screen {
+  min-height: 100vh; display: grid; place-items: center; padding: 1.5rem;
+  background: radial-gradient(1200px 500px at 50% -10%, #12356e 0%, var(--navy) 55%);
+}
+.auth-card { background: var(--surface); width: 100%; max-width: 420px; border-radius: 16px; padding: 2rem; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
+.auth-head { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+.auth-title { font-size: 1.5rem; font-weight: 800; }
+.auth-sub { color: var(--muted); font-size: 0.92rem; margin: 0.25rem 0 1.5rem; }
+.auth-switch { text-align: center; margin-top: 1.25rem; font-size: 0.9rem; color: var(--muted); }
+.auth-switch a { color: var(--blue); font-weight: 700; }
+.auth-switch a:hover { text-decoration: underline; }
 
 .content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .topbar {

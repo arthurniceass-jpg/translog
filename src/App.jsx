@@ -10,10 +10,16 @@ import { OcorrenciaForm } from "./pages/OcorrenciaForm";
 import { OcorrenciaDetalhe } from "./pages/OcorrenciaDetalhe";
 import { Dashboard } from "./pages/Dashboard";
 import { Historico } from "./pages/Historico";
+import { Entrar } from "./pages/Entrar";
+import { Cadastro } from "./pages/Cadastro";
 
 export default function App() {
   return (
     <Routes>
+      {/* Autenticação (tela cheia, sem sidebar) */}
+      <Route path="/entrar" element={<Entrar />} />
+      <Route path="/cadastro" element={<Cadastro />} />
+
       <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
 

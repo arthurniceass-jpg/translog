@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate, Link } from "react-router-dom";
 import { Logo } from "./Logo";
 import { Icon } from "./Icons";
+import { useAuth } from "../context/AuthContext";
 
 const LINKS = [
   { to: "/", label: "Início", icon: "home", end: true },
@@ -15,9 +16,16 @@ const LINKS = [
 export function Layout() {
   const [aberto, setAberto] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { usuario, sair } = useAuth();
 
   // fecha o menu mobile ao trocar de rota
   const fechar = () => setAberto(false);
+
+  function handleSair() {
+    sair();
+    navigate("/entrar");
+  }
 
   return (
     <div className="app-shell">
@@ -40,7 +48,23 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
-        <div className="sidebar-foot">TransLog · AV1</div>
+        <div className="sidebar-foot">
+          {usuario ? (
+            <div className="side-user">
+              <div className="side-user-info">
+                <span className="side-user-name">{usuario.nome}</span>
+                <span className="side-user-mail">{usuario.email}</span>
+              </div>
+              <button className="side-logout" onClick={handleSair} title="Sair">
+                <Icon name="logout" size={18} />
+              </button>
+            </div>
+          ) : (
+            <Link to="/entrar" className="side-login-link">
+              <Icon name="login" size={18} /> Entrar
+            </Link>
+          )}
+        </div>
       </aside>
 
       {/* backdrop do menu mobile */}
