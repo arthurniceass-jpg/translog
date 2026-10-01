@@ -2,9 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useData } from "../context/DataContext";
 import { Field } from "../components/Field";
-
-const STATUS = ["Aberta", "Em análise", "Resolvida"];
-const TIPOS = ["Manutenção", "Acidente", "Atraso", "Outro"];
+import { STATUS_OCORRENCIA, TIPOS_OCORRENCIA } from "../data/constants";
 
 const hoje = new Date().toISOString().slice(0, 10);
 const VAZIO = { titulo: "", tipo: "", data: hoje, veiculoId: "", motoristaId: "", status: "Aberta", descricao: "" };
@@ -81,9 +79,9 @@ export function OcorrenciaForm() {
       <form className="card card-pad" onSubmit={handleSubmit} noValidate>
         <div className="form-grid">
           <Field label="Título" name="titulo" value={form.titulo} onChange={handleChange} error={erros.titulo} required placeholder="Ex.: Colisão no pátio" />
-          <Field label="Tipo" name="tipo" as="select" options={TIPOS} value={form.tipo} onChange={handleChange} error={erros.tipo} required />
+          <Field label="Tipo" name="tipo" as="select" options={TIPOS_OCORRENCIA} value={form.tipo} onChange={handleChange} error={erros.tipo} required />
           <Field label="Data" name="data" type="date" value={form.data} onChange={handleChange} error={erros.data} required />
-          <Field label="Status" name="status" as="select" options={STATUS} value={form.status} onChange={handleChange} error={erros.status} required />
+          <Field label="Status" name="status" as="select" options={STATUS_OCORRENCIA} value={form.status} onChange={handleChange} error={erros.status} required />
 
           {/* Veículo relacionado (obrigatório) */}
           <div className="field">

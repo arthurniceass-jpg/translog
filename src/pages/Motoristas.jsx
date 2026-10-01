@@ -5,8 +5,7 @@ import { SearchBar } from "../components/SearchBar";
 import { EmptyState } from "../components/EmptyState";
 import { Badge, statusVariant } from "../components/Badge";
 import { ConfirmDialog } from "../components/ConfirmDialog";
-
-const STATUS = ["Disponível", "Em viagem", "Inativo"];
+import { STATUS_MOTORISTA } from "../data/constants";
 
 export function Motoristas() {
   const { motoristas, removeMotorista } = useData();
@@ -54,7 +53,7 @@ export function Motoristas() {
         </div>
         <select className="select" style={{ maxWidth: 200 }} value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
           <option value="">Todos os status</option>
-          {STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
+          {STATUS_MOTORISTA.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
 

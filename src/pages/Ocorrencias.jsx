@@ -5,9 +5,7 @@ import { SearchBar } from "../components/SearchBar";
 import { EmptyState } from "../components/EmptyState";
 import { Badge, statusVariant } from "../components/Badge";
 import { ConfirmDialog } from "../components/ConfirmDialog";
-
-const STATUS = ["Aberta", "Em análise", "Resolvida"];
-const TIPOS = ["Manutenção", "Acidente", "Atraso", "Outro"];
+import { STATUS_OCORRENCIA, TIPOS_OCORRENCIA } from "../data/constants";
 
 export function Ocorrencias() {
   const { ocorrencias, veiculos, removeOcorrencia } = useData();
@@ -58,11 +56,11 @@ export function Ocorrencias() {
         </div>
         <select className="select" style={{ maxWidth: 180 }} value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
           <option value="">Todos os status</option>
-          {STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
+          {STATUS_OCORRENCIA.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         <select className="select" style={{ maxWidth: 180 }} value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>
           <option value="">Todos os tipos</option>
-          {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
+          {TIPOS_OCORRENCIA.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>
 

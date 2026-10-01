@@ -2,9 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useData } from "../context/DataContext";
 import { Field } from "../components/Field";
-
-const STATUS = ["Disponível", "Em viagem", "Inativo"];
-const CATEGORIAS = ["A", "B", "C", "D", "E"];
+import { STATUS_MOTORISTA, CATEGORIAS_CNH } from "../data/constants";
 
 const VAZIO = { nome: "", cpf: "", cnh: "", telefone: "", status: "", categorias: [] };
 
@@ -142,12 +140,12 @@ export function MotoristaForm() {
 
           <Field label="Telefone" name="telefone" value={form.telefone} onChange={handleChange} error={erros.telefone} required placeholder="(99) 9 9999-9999" />
 
-          <Field label="Status" name="status" as="select" options={STATUS} value={form.status} onChange={handleChange} error={erros.status} required />
+          <Field label="Status" name="status" as="select" options={STATUS_MOTORISTA} value={form.status} onChange={handleChange} error={erros.status} required />
 
           <div className="field">
             <label>Categorias da CNH <span className="req">*</span></label>
             <div className="row">
-              {CATEGORIAS.map((cat) => (
+              {CATEGORIAS_CNH.map((cat) => (
                 <label key={cat} className="cat-check">
                   <input
                     type="checkbox"

@@ -19,7 +19,7 @@ organização e acompanhamento dos veículos.
 | Integrante | Papel | Contribuição |
 |---|---|---|
 | Arthur Niceas | Front-end / Back-end| Estrutura, navegação, módulos Veículos/Motoristas/Ocorrências, Dashboard e Histórico |
-| Guilherme Aguiar | Front-end / Back-end | API Spring Boot (AV2), melhorias e revisão do front-endno|
+| Guilherme Aguiar | Front-end / Back-end | API Spring Boot (AV2), melhorias e revisão do front-end
 | Gabriel Fernando | Integração / Gerência | Integração front/back e gestão do projeto (AV2) |
 | Lucas Cardoso | UX / Documentação | Interface, experiência de uso e documentação |
 | Guilherme Juarez | Banco de dados / Back-end | Modelagem de dados e back-end (AV2) |

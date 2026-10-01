@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useData } from "../context/DataContext";
 import { Field } from "../components/Field";
+import { STATUS_VEICULO } from "../data/constants";
 
-const STATUS = ["Disponível", "Em uso", "Manutenção"];
 const anoAtual = new Date().getFullYear();
 
 const VAZIO = { placa: "", marca: "", modelo: "", ano: "", status: "" };
@@ -31,6 +31,13 @@ export function VeiculoForm() {
 
   function handleChange(e) {
     const { name, value } = e.target;
+
+    if (name === "ano") {
+      const digitos = value.replace(/\D/g, "").slice(0, 4);
+      setForm((f) => ({ ...f, ano: digitos }));
+      return;
+    }
+
     setForm((f) => ({ ...f, [name]: value }));
   }
 
@@ -40,6 +47,7 @@ export function VeiculoForm() {
     if (!form.marca.trim()) e.marca = "Informe a marca.";
     if (!form.modelo.trim()) e.modelo = "Informe o modelo.";
     if (!String(form.ano).trim()) e.ano = "Informe o ano.";
+    else if (!/^\d{4}$/.test(form.ano)) e.ano = "O ano deve ter 4 dígitos.";
     else if (Number(form.ano) < 1950 || Number(form.ano) > anoAtual + 1) e.ano = `Ano entre 1950 e ${anoAtual + 1}.`;
     if (!form.status) e.status = "Selecione o status.";
     setErros(e);
@@ -79,7 +87,7 @@ export function VeiculoForm() {
       <form className="card card-pad" onSubmit={handleSubmit} noValidate>
         <div className="form-grid">
           <Field label="Placa" name="placa" value={form.placa} onChange={handleChange} error={erros.placa} required placeholder="ABC1D23" />
-          <Field label="Status" name="status" as="select" options={STATUS} value={form.status} onChange={handleChange} error={erros.status} required />
+          <Field label="Status" name="status" as="select" options={STATUS_VEICULO} value={form.status} onChange={handleChange} error={erros.status} required />
           <Field label="Marca" name="marca" value={form.marca} onChange={handleChange} error={erros.marca} required placeholder="Volvo" />
           <Field label="Modelo" name="modelo" value={form.modelo} onChange={handleChange} error={erros.modelo} required placeholder="FH 540" />
           <Field label="Ano" name="ano" type="number" value={form.ano} onChange={handleChange} error={erros.ano} required placeholder={anoAtual} />

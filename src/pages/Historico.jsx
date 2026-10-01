@@ -3,9 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useData } from "../context/DataContext";
 import { EmptyState } from "../components/EmptyState";
 import { Badge, statusVariant } from "../components/Badge";
-
-const STATUS = ["Aberta", "Em análise", "Resolvida"];
-const TIPOS = ["Manutenção", "Acidente", "Atraso", "Outro"];
+import { STATUS_OCORRENCIA, TIPOS_OCORRENCIA } from "../data/constants";
 
 export function Historico() {
   const { ocorrencias, veiculos } = useData();
@@ -48,14 +46,14 @@ export function Historico() {
             <label>Status</label>
             <select className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="">Todos</option>
-              {STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
+              {STATUS_OCORRENCIA.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div className="field">
             <label>Tipo</label>
             <select className="select" value={tipo} onChange={(e) => setTipo(e.target.value)}>
               <option value="">Todos</option>
-              {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
+              {TIPOS_OCORRENCIA.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
           <div className="field">

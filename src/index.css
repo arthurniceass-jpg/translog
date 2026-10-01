@@ -154,9 +154,10 @@ h1, h2, h3 { line-height: 1.2; color: var(--heading); }
 .badge-primary { background: var(--blue-soft); color: var(--blue-dark); }
 
 /* ===== Estados / alertas ===== */
-.empty { text-align: center; padding: 3rem 1.5rem; color: var(--muted); }
-.empty-ico { color: #94a3b8; margin-bottom: 0.4rem; }
-.empty h3 { margin: 0.6rem 0 0.3rem; color: var(--heading); }
+.empty { text-align: center; padding: 3.5rem 1.5rem; color: var(--muted); }
+.empty-ico { display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 50%; background: var(--surface-2); color: #94a3b8; margin-bottom: 0.75rem; }
+.empty h3 { margin: 0 0 0.35rem; color: var(--heading); font-size: 1.05rem; }
+.empty p { font-size: 0.9rem; max-width: 380px; margin: 0 auto; }
 .alert { padding: 0.75rem 1rem; border-radius: 10px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; }
 .alert-success { background: var(--green-soft); color: var(--green); }
 .alert-danger { background: var(--red-soft); color: var(--red); }
