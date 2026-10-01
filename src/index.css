@@ -1,9 +1,3 @@
-/* =========================================================
-   TransLog — Sistema de Gestão de Transporte
-   Identidade visual oficial (azul marinho + azul tech,
-   Montserrat). CSS global com tokens + classes reutilizáveis.
-   ========================================================= */
-
 :root {
   /* Paleta da marca */
   --navy: #0B1F44;        /* confiança / estabilidade */
@@ -125,20 +119,22 @@ h1, h2, h3 { line-height: 1.2; color: var(--heading); }
 .toolbar .grow { flex: 1; min-width: 220px; }
 
 /* ===== Formulários ===== */
-.field { display: grid; gap: 0.35rem; margin-bottom: 1rem; }
-.field label { font-size: 0.86rem; font-weight: 600; color: var(--heading); }
+.field { display: grid; gap: 0.25rem; margin-bottom: 0.75rem; }
+.field label { font-size: 0.81rem; font-weight: 600; color: var(--heading); }
 .field .req { color: var(--red); }
 .input, .select, .textarea {
-  width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-  padding: 0.62rem 0.78rem; font-size: 0.95rem; color: var(--text); font-family: inherit;
+  width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.55rem 0.7rem; font-size: 0.9rem; color: var(--text); font-family: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .input:focus, .select:focus, .textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
 .textarea { resize: vertical; min-height: 90px; }
-.field-error { color: var(--red); font-size: 0.82rem; }
-.input.invalid, .select.invalid, .textarea.invalid { border-color: var(--red); }
-.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1rem; }
-.form-actions { display: flex; gap: 0.75rem; margin-top: 0.5rem; }
+.field-error { color: var(--red); font-size: 0.78rem; font-weight: 500; }
+.input.invalid, .select.invalid, .textarea.invalid { border-color: var(--red); box-shadow: 0 0 0 2px var(--red-soft); }
+.form-grid { display: grid; grid-template-columns: 1fr; gap: 0.5rem 0; max-width: 480px; }
+.form-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; justify-content: flex-end; }
+.cat-check { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; font-weight: 600; color: var(--text); padding: 0.35rem 0.7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; }
+.cat-check:hover { border-color: var(--blue); color: var(--blue); }
 
 /* ===== Tabela ===== */
 .table-wrap { overflow-x: auto; }
