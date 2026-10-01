@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Home } from "./pages/Home";
 import { Veiculos } from "./pages/Veiculos";
 import { VeiculoForm } from "./pages/VeiculoForm";
@@ -20,7 +21,8 @@ export default function App() {
       <Route path="/entrar" element={<Entrar />} />
       <Route path="/cadastro" element={<Cadastro />} />
 
-      <Route path="/" element={<Layout />}>
+      <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
 
         {/* Veículos */}
@@ -45,6 +47,7 @@ export default function App() {
 
         {/* Rota desconhecida volta para o início */}
         <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
       </Route>
     </Routes>
   );
