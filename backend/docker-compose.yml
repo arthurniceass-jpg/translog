@@ -1,0 +1,36 @@
+# Sobe o Postgres e a API em modo produção-like:  docker compose up --build
+# (para desenvolver sem Docker basta ./mvnw spring-boot:run — usa H2 em memória com dados de demonstração)
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: translog
+      POSTGRES_USER: translog
+      POSTGRES_PASSWORD: translog
+    ports:
+      - "5432:5432"
+    volumes:
+      - translog-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U translog -d translog"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: jdbc:postgresql://db:5432/translog
+      DB_USER: translog
+      DB_PASSWORD: translog
+      JWT_SECRET: troque-este-segredo-por-um-com-32-chars-ou-mais
+      CORS_ORIGINS: http://localhost:5173
+    ports:
+      - "8080:8080"
+
+volumes:
+  translog-pgdata:
