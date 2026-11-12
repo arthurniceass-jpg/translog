@@ -21,32 +21,28 @@ export default function App() {
       <Route path="/entrar" element={<Entrar />} />
       <Route path="/cadastro" element={<Cadastro />} />
 
+      {/* Área logada */}
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<Layout />}>
-        <Route index element={<Home />} />
+          <Route index element={<Home />} />
 
-        {/* Veículos */}
-        <Route path="veiculos" element={<Veiculos />} />
-        <Route path="veiculos/novo" element={<VeiculoForm />} />
-        <Route path="veiculos/:id/editar" element={<VeiculoForm />} />
+          <Route path="veiculos" element={<Veiculos />} />
+          <Route path="veiculos/novo" element={<VeiculoForm />} />
+          <Route path="veiculos/:id/editar" element={<VeiculoForm />} />
 
-        {/* Motoristas */}
-        <Route path="motoristas" element={<Motoristas />} />
-        <Route path="motoristas/novo" element={<MotoristaForm />} />
-        <Route path="motoristas/:id/editar" element={<MotoristaForm />} />
+          <Route path="motoristas" element={<Motoristas />} />
+          <Route path="motoristas/novo" element={<MotoristaForm />} />
+          <Route path="motoristas/:id/editar" element={<MotoristaForm />} />
 
-        {/* Ocorrências */}
-        <Route path="ocorrencias" element={<Ocorrencias />} />
-        <Route path="ocorrencias/nova" element={<OcorrenciaForm />} />
-        <Route path="ocorrencias/:id" element={<OcorrenciaDetalhe />} />
-        <Route path="ocorrencias/:id/editar" element={<OcorrenciaForm />} />
+          <Route path="ocorrencias" element={<Ocorrencias />} />
+          <Route path="ocorrencias/nova" element={<OcorrenciaForm />} />
+          <Route path="ocorrencias/:id" element={<OcorrenciaDetalhe />} />
+          <Route path="ocorrencias/:id/editar" element={<OcorrenciaForm />} />
 
-        {/* Verticais adicionais (5 integrantes) */}
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="historico" element={<Historico />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="historico" element={<Historico />} />
 
-        {/* Rota desconhecida volta para o início */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Route>
     </Routes>

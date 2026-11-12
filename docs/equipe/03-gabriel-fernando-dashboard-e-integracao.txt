@@ -1,0 +1,117 @@
+TRANSLOG AV2 — INSTRUÇÕES PARA GABRIEL FERNANDO
+
+COMO USAR (leia primeiro)
+1. Baixe o projeto do GitHub (git clone / git pull) e crie a branch indicada no seu prompt.
+2. Abra uma IA open source (Qwen Coder, DeepSeek, Llama...).
+3. Cole o "CONTEXTO COMUM" abaixo e, em seguida, o "SEU PROMPT".
+4. Quando o prompt pedir, cole também o conteúdo dos arquivos de referência (a IA não enxerga o repositório).
+5. Leia e teste tudo o que a IA gerar antes de commitar. Rode ./mvnw verify dentro de backend/.
+6. Commite na SUA branch e abra Pull Request para a main. Não commite direto na main.
+
+==================== CONTEXTO COMUM ====================
+
+## Contexto comum (colar SEMPRE antes do prompt da sua parte)
+
+```text
+Você é um engenheiro de software sênior em Java/Spring Boot. Vou pedir código para o projeto TransLog, um sistema de gestão de
+transporte (veículos, motoristas e ocorrências). Você NÃO tem acesso ao repositório: trabalhe só com o que eu colar aqui.
+Responda em português. Entregue arquivos COMPLETOS (não trechos), um bloco de código por arquivo, com o caminho no topo.
+Não invente classes/métodos que não estejam nos arquivos que colei; se faltar algo, me peça o arquivo.
+
+PROJETO
+- Front-end: React + Vite (raiz do repo). Back-end: pasta backend/ — Spring Boot 4.1, Java 21, Maven, pacote br.com.translog.
+- Dependências: spring-boot-starter-webmvc, data-jpa, validation, security + oauth2-resource-server (JWT HS256), flyway, H2 (dev/testes),
+  PostgreSQL (prod), springdoc-openapi. SEM Lombok. Jackson 3 (pacote tools.jackson.*, mas as anotações continuam em com.fasterxml.jackson.annotation).
+- Testes: JUnit 5 + MockMvc + H2 (perfil "test"), rodando com ./mvnw verify. Os testes estendem br.com.translog.ApiTestBase (já existe).
+
+ARQUITETURA (obrigatória)
+- Camadas: controller (fino: @Valid, delega, define status HTTP) → service (regras de negócio, @Transactional) → repository (Spring Data JPA).
+- DTOs como records (Request/Response). A entidade JPA NUNCA sai na API. Conversão em um Mapper (@Component), sem MapStruct.
+- Erros: lance NotFoundException (404), ConflictException (409) ou ValorInvalidoException (400) de br.com.translog.common.
+  O GlobalExceptionHandler devolve o JSON padrão {timestamp,status,error,message,path,fieldErrors}. Não crie try/catch nos controllers.
+- Validação com Bean Validation, mensagens EM PORTUGUÊS no próprio annotation (ex.: @NotBlank(message = "Informe o nome.")).
+- Enums com acento: o JSON usa o rótulo ("Em viagem"), o banco guarda o nome do enum (EM_VIAGEM). Use o padrão da interface Rotulado
+  (@JsonValue no getRotulo + @JsonCreator no método estático de()).
+- Filtros opcionais: use JpaSpecificationExecutor + Specification (NUNCA JPQL com "(:p is null or ...)", quebra no PostgreSQL).
+- O schema do banco é criado pelo Flyway em db/migration/V1__schema_inicial.sql e o Hibernate só VALIDA (ddl-auto=validate).
+  Nomes de coluna/tabela devem bater com a V1. Se precisar alterar o schema, crie V2__descricao.sql — nunca edite a V1.
+- Todas as rotas /api/** exigem JWT (Authorization: Bearer ...). Nos testes, comToken(...) do ApiTestBase já envia o token.
+
+SCHEMA (V1) das tabelas relevantes
+  veiculos(id BIGINT identity, placa VARCHAR(7) unique, marca, modelo, ano INT, status VARCHAR(20))
+  motoristas(id, nome VARCHAR(120), cpf VARCHAR(11) unique, cnh VARCHAR(11) unique, telefone VARCHAR(11), status VARCHAR(20))
+  motorista_categorias(motorista_id FK motoristas ON DELETE CASCADE, categoria VARCHAR(1), PK(motorista_id, categoria))
+  ocorrencias(id, titulo VARCHAR(160), tipo VARCHAR(20), descricao VARCHAR(2000), data DATE, status VARCHAR(20),
+              veiculo_id BIGINT NOT NULL FK veiculos, motorista_id BIGINT NULL FK motoristas)
+
+GIT (regras do time)
+- Nunca commitar direto na main. Crie a branch indicada na sua tarefa a partir da main atualizada (git pull).
+- Commits pequenos, convencionais e em português, ex.: "feat: cria módulo de motoristas", "test: cobre filtro por status", "fix: ...", "docs: ...".
+- Antes do PR rode ./mvnw verify dentro de backend/ (tem que passar). Abra Pull Request para a main descrevendo o que mudou e como testar.
+- Não coloque senhas/segredos no código.
+```
+
+==================== SEU PROMPT ====================
+
+## 3a) Gabriel Fernando — Dashboard / Histórico (endpoints)
+
+**Arquivos de referência para colar:** `veiculo/VeiculoController.java`, `veiculo/VeiculoService.java`, `veiculo/VeiculoRepository.java`,
+`veiculo/StatusVeiculo.java`, `motorista/StatusMotorista.java`, `ocorrencia/StatusOcorrencia.java`, `ocorrencia/TipoOcorrencia.java`,
+`common/GlobalExceptionHandler.java`, `ApiTestBase.java`, `veiculo/VeiculoApiTest.java`, `db/migration/V1__schema_inicial.sql`.
+Pré-requisito: módulos Motorista e Ocorrência mergeados na main (ou faça por SQL nativo com `JdbcTemplate`/`@Query(nativeQuery=true)` para não depender deles).
+
+```text
+TAREFA: criar o módulo DASHBOARD do back-end (somente leitura). Pacote: br.com.translog.dashboard. Branch: feature/dashboard.
+
+CONTRATO (fixo — o front monta os gráficos com isso)
+GET /api/dashboard/resumo  (autenticado) →
+{
+  "totais": { "veiculos": 6, "motoristas": 5, "ocorrencias": 5, "ocorrenciasAbertas": 2, "veiculosDisponiveis": 3 },
+  "veiculosPorStatus":     { "Disponível": 3, "Em uso": 2, "Manutenção": 1 },
+  "motoristasPorStatus":   { "Disponível": 2, "Em viagem": 2, "Inativo": 1 },
+  "ocorrenciasPorStatus":  { "Aberta": 2, "Em análise": 1, "Resolvida": 2 },
+  "ocorrenciasPorTipo":    { "Manutenção": 2, "Acidente": 1, "Atraso": 1, "Outro": 1 }
+}
+- As chaves dos mapas são os RÓTULOS com acento e TODAS as chaves do enum aparecem, mesmo com valor 0 (preencha zeros).
+- Use agregações no banco (GROUP BY via @Query), não carregue tudo na memória. Prefira queries JPQL/nativas com projeção em records/interfaces.
+Arquivos: DashboardController, DashboardService, DashboardRepository (ou queries nas repositories dos módulos), dto/ResumoResponse.java
+(records aninhados, Map<String,Long> com LinkedHashMap para manter a ordem), DashboardApiTest.
+
+HISTÓRICO: o front já usa GET /api/ocorrencias com filtros q/status/tipo/de/ate (módulo do Aguiar). Verifique se esse endpoint atende a tela
+de Histórico (ordenado por data DESC) e, se faltar algo (ex.: placa do veículo e nome do motorista na resposta), registre uma issue/combine com o Aguiar
+em vez de duplicar endpoint.
+
+CRITÉRIOS DE ACEITE: resposta idêntica ao contrato; zeros preenchidos; 401 sem token; teste cria dados conhecidos e confere as contagens
+(o banco de teste é compartilhado entre classes: compare DELTAS — consulte antes e depois — em vez de valores absolutos).
+No final, comandos git para feature/dashboard e texto do PR.
+```
+
+## 3b) Gabriel Fernando — integração front/back (ponta a ponta)
+
+Esta parte é mais de **execução e diagnóstico** do que de gerar código. Cole o prompt abaixo junto com a saída/erro que você estiver vendo.
+
+```text
+CONTEXTO: front React+Vite (porta 5173) e API Spring Boot (porta 8080) do TransLog. O front lê a URL da API de import.meta.env.VITE_API_URL
+(arquivo .env.local na raiz do front: VITE_API_URL=http://localhost:8080). A API usa JWT (Authorization: Bearer) e CORS liberado só para as origens
+em CORS_ORIGINS (padrão http://localhost:5173). Formato de erro da API: {timestamp,status,error,message,path,fieldErrors}.
+Login de demonstração (perfil dev, H2 com dados): admin@translog.com / admin123.
+
+TAREFA: me guie para validar a integração ponta a ponta e diagnosticar qualquer falha. Quero um roteiro com comandos exatos:
+1) subir a API (cd backend && ./mvnw spring-boot:run) e conferir http://localhost:8080/actuator/health e /swagger-ui.html;
+2) criar .env.local, subir o front (npm run dev) e testar: cadastro, login, logout, rota protegida sem token, token expirado (simule apagando o token do localStorage);
+3) CRUD de cada módulo pelo navegador, olhando a aba Network do DevTools (status, payload, resposta);
+4) se aparecer erro de CORS (preflight OPTIONS bloqueado), explique como ler o erro e como ajustar CORS_ORIGINS para outra porta/origem;
+5) se aparecer 401/403/409/400, como mapear para a mensagem mostrada na tela (o front exibe o campo "message" e "fieldErrors" por campo);
+6) um checklist final "pronto para apresentar" (dados de demonstração, usuário de teste, ordem da demo).
+Vou colar a seguir o erro/print do console ou o corpo da resposta de rede; analise e diga a causa mais provável e o ajuste mínimo.
+Atenção: nada de chave/segredo real no repositório; o JWT_SECRET de produção vai em variável de ambiente.
+```
+
+==================== DICAS ====================
+
+## Dicas rápidas para todos
+
+- Rodar a API: `cd backend && ./mvnw spring-boot:run` (Windows: `mvnw.cmd spring-boot:run`) → `http://localhost:8080/swagger-ui.html`. Login: `admin@translog.com` / `admin123`.
+- Rodar testes: `./mvnw verify`. Se a IA gerou código que não compila, cole o erro **inteiro** de volta nela.
+- IA open source erra APIs do Spring Boot 4 (nomes de pacotes mudaram, Jackson agora é `tools.jackson`). Quando suspeitar, compare com os arquivos de `veiculo/`, que **já compilam e têm teste passando**.
+- Conflito de merge: `git pull --rebase origin main` na sua branch e resolva; na dúvida, chame o Arthur.

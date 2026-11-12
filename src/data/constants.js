@@ -7,3 +7,6 @@ export const CATEGORIAS_CNH = ["A", "B", "C", "D", "E"];
 export const STATUS_OCORRENCIA = ["Aberta", "Em análise", "Resolvida"];
 
 export const TIPOS_OCORRENCIA = ["Manutenção", "Acidente", "Atraso", "Outro"];
+
+/** Ícone de cada tipo de ocorrência (nome em components/Icons.jsx). */
+export const ICONE_TIPO = { Manutenção: "tool", Acidente: "alert", Atraso: "history", Outro: "inbox" };

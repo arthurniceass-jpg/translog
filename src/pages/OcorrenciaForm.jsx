@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useData } from "../context/DataContext";
+import { useToast } from "../context/ToastContext";
+import { PageHeader } from "../components/PageHeader";
+import { FormGate } from "../components/FormGate";
 import { Field } from "../components/Field";
 import { STATUS_OCORRENCIA, TIPOS_OCORRENCIA } from "../data/constants";
 
@@ -9,23 +12,27 @@ const VAZIO = { titulo: "", tipo: "", data: hoje, veiculoId: "", motoristaId: ""
 
 export function OcorrenciaForm() {
   const { id } = useParams();
+  const { getOcorrencia } = useData();
+  const existente = id ? getOcorrencia(id) : null;
+
+  return (
+    <FormGate editando={Boolean(id)} existente={existente} voltar="/ocorrencias" rotulo="Ocorrência">
+      <Formulario id={id} existente={existente} />
+    </FormGate>
+  );
+}
+
+function Formulario({ id, existente }) {
   const navigate = useNavigate();
-  const { getOcorrencia, addOcorrencia, updateOcorrencia, veiculos, motoristas } = useData();
-
+  const toast = useToast();
+  const { addOcorrencia, updateOcorrencia, veiculos, motoristas } = useData();
   const editando = Boolean(id);
-  const existente = editando ? getOcorrencia(id) : null;
 
-  const [form, setForm] = useState(existente ? { ...existente } : VAZIO);
+  const [form, setForm] = useState(
+    existente ? { ...existente, veiculoId: String(existente.veiculoId), motoristaId: existente.motoristaId ? String(existente.motoristaId) : "" } : VAZIO,
+  );
   const [erros, setErros] = useState({});
-
-  if (editando && !existente) {
-    return (
-      <div className="card card-pad">
-        <p>Ocorrência não encontrada.</p>
-        <button className="btn btn-outline mt" onClick={() => navigate("/ocorrencias")}>Voltar</button>
-      </div>
-    );
-  }
+  const [salvando, setSalvando] = useState(false);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -44,69 +51,72 @@ export function OcorrenciaForm() {
     return Object.keys(e).length === 0;
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
+  async function handleSubmit(ev) {
+    ev.preventDefault();
     if (!validar()) return;
-
     const dados = {
       titulo: form.titulo.trim(),
       tipo: form.tipo,
       data: form.data,
-      veiculoId: form.veiculoId,
-      motoristaId: form.motoristaId || null,
+      veiculoId: Number(form.veiculoId),
+      motoristaId: form.motoristaId ? Number(form.motoristaId) : null,
       status: form.status,
       descricao: form.descricao.trim(),
     };
-
-    if (editando) {
-      updateOcorrencia(id, dados);
-      navigate("/ocorrencias", { state: { msg: `Ocorrência "${dados.titulo}" atualizada.` } });
-    } else {
-      addOcorrencia(dados);
-      navigate("/ocorrencias", { state: { msg: `Ocorrência "${dados.titulo}" registrada.` } });
+    setSalvando(true);
+    try {
+      if (editando) await updateOcorrencia(id, dados);
+      else await addOcorrencia(dados);
+      toast.sucesso(`Ocorrência "${dados.titulo}" ${editando ? "atualizada" : "registrada"}.`);
+      navigate("/ocorrencias");
+    } catch (err) {
+      setErros(err.fieldErrors || {});
+      toast.erro(err.message);
+      setSalvando(false);
     }
   }
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <span className="kicker">Ocorrências</span>
-          <h1 className="page-title">{editando ? "Editar ocorrência" : "Nova ocorrência"}</h1>
-        </div>
-      </div>
+      <PageHeader
+        titulo={editando ? "Editar ocorrência" : "Nova ocorrência"}
+        sub={editando ? "Atualize as informações da ocorrência." : "Registre o que aconteceu para acompanhar até a resolução."}
+        voltar={{ to: "/ocorrencias", label: "Ocorrências" }}
+      />
 
-      <form className="card card-pad" onSubmit={handleSubmit} noValidate>
+      <form className="card card-pad form-card" onSubmit={handleSubmit} noValidate>
+        <div className="form-section">O que aconteceu</div>
         <div className="form-grid">
-          <Field label="Título" name="titulo" value={form.titulo} onChange={handleChange} error={erros.titulo} required placeholder="Ex.: Colisão no pátio" />
+          <Field full label="Título" name="titulo" value={form.titulo} onChange={handleChange} error={erros.titulo} required placeholder="Ex.: Colisão no pátio" />
           <Field label="Tipo" name="tipo" as="select" options={TIPOS_OCORRENCIA} value={form.tipo} onChange={handleChange} error={erros.tipo} required />
           <Field label="Data" name="data" type="date" value={form.data} onChange={handleChange} error={erros.data} required />
-          <Field label="Status" name="status" as="select" options={STATUS_OCORRENCIA} value={form.status} onChange={handleChange} error={erros.status} required />
+          <Field full label="Descrição" name="descricao" as="textarea" value={form.descricao} onChange={handleChange} error={erros.descricao} required placeholder="Descreva o que aconteceu, local e providências..." />
+        </div>
 
-          {/* Veículo relacionado (obrigatório) */}
+        <div className="form-section">Envolvidos</div>
+        <div className="form-grid">
           <div className="field">
-            <label htmlFor="veiculoId">Veículo relacionado <span className="req">*</span></label>
+            <label htmlFor="veiculoId">Veículo <span className="req">*</span></label>
             <select id="veiculoId" name="veiculoId" value={form.veiculoId} onChange={handleChange} className={"select" + (erros.veiculoId ? " invalid" : "")}>
               <option value="">Selecione...</option>
               {veiculos.map((v) => <option key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo}</option>)}
             </select>
             {erros.veiculoId && <span className="field-error">{erros.veiculoId}</span>}
           </div>
-
-          {/* Motorista relacionado (opcional) */}
           <div className="field">
-            <label htmlFor="motoristaId">Motorista relacionado</label>
-            <select id="motoristaId" name="motoristaId" value={form.motoristaId || ""} onChange={handleChange} className="select">
+            <label htmlFor="motoristaId">Motorista</label>
+            <select id="motoristaId" name="motoristaId" value={form.motoristaId} onChange={handleChange} className="select">
               <option value="">Nenhum</option>
               {motoristas.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}
             </select>
           </div>
+          <Field label="Status" name="status" as="select" options={STATUS_OCORRENCIA} value={form.status} onChange={handleChange} error={erros.status} required />
         </div>
 
-        <Field label="Descrição" name="descricao" as="textarea" value={form.descricao} onChange={handleChange} error={erros.descricao} required placeholder="Descreva o que aconteceu..." />
-
         <div className="form-actions">
-          <button type="submit" className="btn btn-primary">{editando ? "Salvar alterações" : "Registrar"}</button>
+          <button type="submit" className="btn btn-primary" disabled={salvando}>
+            {salvando && <span className="spinner" />} {editando ? "Salvar alterações" : "Registrar ocorrência"}
+          </button>
           <button type="button" className="btn btn-ghost" onClick={() => navigate("/ocorrencias")}>Cancelar</button>
         </div>
       </form>
