@@ -1,52 +1,99 @@
 import { Link } from "react-router-dom";
 import { useData } from "../context/DataContext";
+import { useAuth } from "../context/AuthContext";
+import { Badge, statusVariant } from "../components/Badge";
+import { Icon } from "../components/Icons";
+import { Donut } from "../components/Charts";
+import { CardsSkeleton, ErroCarga } from "../components/Loading";
+import { EmptyState } from "../components/EmptyState";
+import { ICONE_TIPO } from "../data/constants";
+import { contarPor, dataBR, saudacao } from "../lib/format";
 
 export function Home() {
-  const { veiculos, motoristas, ocorrencias } = useData();
-  const ocorrenciasAbertas = ocorrencias.filter((o) => o.status === "Aberta").length;
+  const { veiculos, motoristas, ocorrencias, carregando, erro, recarregar } = useData();
+  const { usuario } = useAuth();
+
+  const abertas = ocorrencias.filter((o) => o.status !== "Resolvida").length;
+  const disponiveis = veiculos.filter((v) => v.status === "Disponível").length;
+  const recentes = [...ocorrencias].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 5);
+  const placaDe = (id) => veiculos.find((v) => String(v.id) === String(id))?.placa || "—";
+  const primeiroNome = usuario?.nome?.split(" ")[0] || "";
 
   return (
     <>
-      <div className="page-head">
+      <section className="hero">
         <div>
-          <span className="kicker">Sistema de Gestão de Transporte</span>
-          <h1 className="page-title">Bem-vindo ao TransLog</h1>
-          <p className="page-sub">
-            Centralize o controle da frota: cadastre veículos e motoristas e
-            acompanhe as ocorrências da operação em um só lugar.
+          <h1>{saudacao()}, {primeiroNome}.</h1>
+          <p>
+            {carregando
+              ? "Carregando os dados da operação..."
+              : abertas > 0
+                ? `Você tem ${abertas} ocorrência(s) em aberto e ${disponiveis} veículo(s) disponível(is) agora.`
+                : `Operação em dia: nenhuma ocorrência em aberto e ${disponiveis} veículo(s) disponível(is).`}
           </p>
         </div>
-        <Link to="/veiculos" className="btn btn-primary">Gerenciar veículos</Link>
-      </div>
+        <Link to="/ocorrencias/nova" className="btn btn-primary"><Icon name="plus" size={17} /> Registrar ocorrência</Link>
+      </section>
 
-      {/* Indicadores rápidos (calculados dos dados locais) */}
-      <div className="stats-grid">
-        <Link to="/veiculos" className="card stat">
-          <div className="stat-label">Veículos cadastrados</div>
-          <div className="stat-value">{veiculos.length}</div>
-        </Link>
-        <Link to="/motoristas" className="card stat">
-          <div className="stat-label">Motoristas cadastrados</div>
-          <div className="stat-value">{motoristas.length}</div>
-        </Link>
-        <Link to="/ocorrencias" className="card stat">
-          <div className="stat-label">Ocorrências abertas</div>
-          <div className="stat-value" style={{ color: ocorrenciasAbertas > 0 ? "var(--danger)" : "var(--success)" }}>
-            {ocorrenciasAbertas}
+      {erro && <ErroCarga mensagem={erro} onTentar={recarregar} />}
+
+      {carregando ? (
+        <CardsSkeleton />
+      ) : (
+        <div className="stats-grid">
+          <Link to="/veiculos" className="card stat">
+            <span className="stat-ico blue"><Icon name="truck" size={22} /></span>
+            <div><div className="stat-label">Veículos</div><div className="stat-value">{veiculos.length}</div></div>
+          </Link>
+          <Link to="/motoristas" className="card stat">
+            <span className="stat-ico blue"><Icon name="users" size={22} /></span>
+            <div><div className="stat-label">Motoristas</div><div className="stat-value">{motoristas.length}</div></div>
+          </Link>
+          <Link to="/veiculos" className="card stat">
+            <span className="stat-ico green"><Icon name="check" size={22} /></span>
+            <div><div className="stat-label">Veículos disponíveis</div><div className="stat-value">{disponiveis}</div></div>
+          </Link>
+          <Link to="/ocorrencias" className="card stat">
+            <span className="stat-ico red"><Icon name="alert" size={22} /></span>
+            <div><div className="stat-label">Ocorrências em aberto</div><div className="stat-value">{abertas}</div></div>
+          </Link>
+        </div>
+      )}
+
+      {!carregando && (
+        <div className="grid-2 mt">
+          <div className="card card-pad">
+            <div className="card-head">
+              <h2 className="card-title">Ocorrências recentes</h2>
+              <Link to="/historico" className="link-more">Ver histórico <Icon name="arrow" size={15} /></Link>
+            </div>
+            {recentes.length === 0 ? (
+              <EmptyState icon="alert" titulo="Sem ocorrências" texto="Quando houver registros, eles aparecem aqui." />
+            ) : (
+              <div className="list">
+                {recentes.map((o) => (
+                  <Link key={o.id} to={`/ocorrencias/${o.id}`} className="list-item">
+                    <span className={"type-ico " + o.tipo}><Icon name={ICONE_TIPO[o.tipo] || "inbox"} size={18} /></span>
+                    <div className="grow">
+                      <strong>{o.titulo}</strong>
+                      <small>{placaDe(o.veiculoId)} · {dataBR(o.data)}</small>
+                    </div>
+                    <Badge variant={statusVariant(o.status)}>{o.status}</Badge>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
-        </Link>
-      </div>
 
-      <div className="card card-pad mt">
-        <h2 style={{ marginBottom: "0.5rem" }}>O que dá pra fazer</h2>
-        <ul style={{ color: "var(--muted)", lineHeight: 2, paddingLeft: "1.2rem" }}>
-          <li><strong>Veículos</strong> — cadastrar, editar, buscar e acompanhar o status da frota.</li>
-          <li><strong>Motoristas</strong> — gerenciar condutores, CNH e disponibilidade.</li>
-          <li><strong>Ocorrências</strong> — registrar acidentes, manutenções e atrasos com filtros.</li>
-          <li><strong>Dashboard</strong> — visão geral com indicadores da operação.</li>
-          <li><strong>Histórico</strong> — consulta de ocorrências com filtros por status, tipo e período.</li>
-        </ul>
-      </div>
+          <div className="card card-pad">
+            <div className="card-head">
+              <h2 className="card-title">Frota agora</h2>
+              <Link to="/dashboard" className="link-more">Dashboard <Icon name="arrow" size={15} /></Link>
+            </div>
+            <Donut dados={contarPor(veiculos, "status")} rotuloCentro="veículos" />
+          </div>
+        </div>
+      )}
     </>
   );
 }

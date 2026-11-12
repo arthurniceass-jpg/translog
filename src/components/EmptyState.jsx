@@ -1,13 +1,14 @@
 import { Icon } from "./Icons";
 
-export function EmptyState({ icon = "inbox", titulo = "Nada por aqui", texto }) {
+export function EmptyState({ icon = "inbox", titulo = "Nada por aqui", texto, children }) {
   return (
     <div className="empty">
       <span className="empty-ico">
-        <Icon name={icon} size={34} strokeWidth={1.5} />
+        <Icon name={icon} size={30} strokeWidth={1.6} />
       </span>
       <h3>{titulo}</h3>
       {texto && <p>{texto}</p>}
+      {children}
     </div>
   );
 }

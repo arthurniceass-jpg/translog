@@ -1,118 +1,134 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useData } from "../context/DataContext";
+import { useToast } from "../context/ToastContext";
+import { PageHeader } from "../components/PageHeader";
 import { SearchBar } from "../components/SearchBar";
 import { EmptyState } from "../components/EmptyState";
 import { Badge, statusVariant } from "../components/Badge";
 import { ConfirmDialog } from "../components/ConfirmDialog";
-import { STATUS_OCORRENCIA, TIPOS_OCORRENCIA } from "../data/constants";
+import { Icon } from "../components/Icons";
+import { TableSkeleton, ErroCarga } from "../components/Loading";
+import { STATUS_OCORRENCIA, TIPOS_OCORRENCIA, ICONE_TIPO } from "../data/constants";
+import { dataBR } from "../lib/format";
 
 export function Ocorrencias() {
-  const { ocorrencias, veiculos, removeOcorrencia } = useData();
-  const location = useLocation();
+  const { ocorrencias, veiculos, removeOcorrencia, carregando, erro, recarregar } = useData();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("");
   const [excluir, setExcluir] = useState(null);
-  const [msg, setMsg] = useState(location.state?.msg || "");
+  const [excluindo, setExcluindo] = useState(false);
 
-  const placaDe = (veiculoId) => veiculos.find((v) => v.id === veiculoId)?.placa || "—";
+  const placaDe = (id) => veiculos.find((v) => String(v.id) === String(id))?.placa || "—";
 
   const termo = busca.trim().toLowerCase();
-  const lista = ocorrencias.filter((o) => {
-    const casaBusca =
-      !termo ||
-      o.titulo.toLowerCase().includes(termo) ||
-      o.descricao.toLowerCase().includes(termo);
-    const casaStatus = !filtroStatus || o.status === filtroStatus;
-    const casaTipo = !filtroTipo || o.tipo === filtroTipo;
-    return casaBusca && casaStatus && casaTipo;
-  });
+  const lista = ocorrencias
+    .filter((o) => {
+      const casaBusca = !termo || o.titulo.toLowerCase().includes(termo) || o.descricao.toLowerCase().includes(termo);
+      return casaBusca && (!filtroStatus || o.status === filtroStatus) && (!filtroTipo || o.tipo === filtroTipo);
+    })
+    .sort((a, b) => b.data.localeCompare(a.data));
 
-  function confirmarExclusao() {
-    removeOcorrencia(excluir.id);
-    setMsg(`Ocorrência "${excluir.titulo}" excluída.`);
-    setExcluir(null);
+  async function confirmarExclusao() {
+    setExcluindo(true);
+    try {
+      await removeOcorrencia(excluir.id);
+      toast.sucesso(`Ocorrência "${excluir.titulo}" excluída.`);
+    } catch (e) {
+      toast.erro(e.message);
+    } finally {
+      setExcluindo(false);
+      setExcluir(null);
+    }
   }
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <span className="kicker">Operação</span>
-          <h1 className="page-title">Ocorrências</h1>
-          <p className="page-sub">Registre e acompanhe acidentes, manutenções e atrasos.</p>
-        </div>
-        <Link to="/ocorrencias/nova" className="btn btn-primary">+ Nova ocorrência</Link>
-      </div>
+      <PageHeader titulo="Ocorrências" sub="Registre e acompanhe acidentes, manutenções e atrasos da operação.">
+        <Link to="/ocorrencias/nova" className="btn btn-primary"><Icon name="plus" size={17} /> Nova ocorrência</Link>
+      </PageHeader>
 
-      {msg && <div className="alert alert-success">{msg}</div>}
+      {erro && <ErroCarga mensagem={erro} onTentar={recarregar} />}
 
       <div className="toolbar">
         <div className="grow">
           <SearchBar value={busca} onChange={setBusca} placeholder="Buscar por título ou descrição..." />
         </div>
-        <select className="select" style={{ maxWidth: 180 }} value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
+        <select className="select" style={{ width: "auto" }} value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)} aria-label="Filtrar por status">
           <option value="">Todos os status</option>
           {STATUS_OCORRENCIA.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-        <select className="select" style={{ maxWidth: 180 }} value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>
+        <select className="select" style={{ width: "auto" }} value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)} aria-label="Filtrar por tipo">
           <option value="">Todos os tipos</option>
           {TIPOS_OCORRENCIA.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>
 
       <div className="card">
-        {lista.length === 0 ? (
+        {carregando ? (
+          <TableSkeleton />
+        ) : lista.length === 0 ? (
           <EmptyState
             icon="alert"
             titulo={ocorrencias.length === 0 ? "Nenhuma ocorrência registrada" : "Nenhum resultado"}
-            texto={ocorrencias.length === 0 ? "Clique em “Nova ocorrência” para começar." : "Tente ajustar a busca ou os filtros."}
-          />
+            texto={ocorrencias.length === 0 ? "Registre a primeira ocorrência da operação." : "Tente ajustar a busca ou os filtros."}
+          >
+            {ocorrencias.length === 0 && <Link to="/ocorrencias/nova" className="btn btn-primary"><Icon name="plus" size={17} /> Nova ocorrência</Link>}
+          </EmptyState>
         ) : (
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Título</th>
-                  <th>Tipo</th>
-                  <th>Veículo</th>
-                  <th>Data</th>
-                  <th>Status</th>
-                  <th className="text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lista.map((o) => (
-                  <tr key={o.id}>
-                    <td><strong>{o.titulo}</strong></td>
-                    <td>{o.tipo}</td>
-                    <td>{placaDe(o.veiculoId)}</td>
-                    <td>{new Date(o.data + "T00:00:00").toLocaleDateString("pt-BR")}</td>
-                    <td><Badge variant={statusVariant(o.status)}>{o.status}</Badge></td>
-                    <td>
-                      <div className="actions">
-                        <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/ocorrencias/${o.id}`)}>Detalhes</button>
-                        <button className="btn btn-outline btn-sm" onClick={() => navigate(`/ocorrencias/${o.id}/editar`)}>Editar</button>
-                        <button className="btn btn-danger btn-sm" onClick={() => setExcluir(o)}>Excluir</button>
-                      </div>
-                    </td>
+          <>
+            <div className="table-wrap">
+              <table className="table stack">
+                <thead>
+                  <tr>
+                    <th>Ocorrência</th>
+                    <th>Veículo</th>
+                    <th>Data</th>
+                    <th>Status</th>
+                    <th className="text-right">Ações</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {lista.map((o) => (
+                    <tr key={o.id}>
+                      <td className="cell-first" data-label="Ocorrência">
+                        <div className="cell-main">
+                          <span className={"type-ico " + o.tipo}><Icon name={ICONE_TIPO[o.tipo] || "inbox"} size={18} /></span>
+                          <div>
+                            <strong>{o.titulo}</strong>
+                            <small>{o.tipo}</small>
+                          </div>
+                        </div>
+                      </td>
+                      <td data-label="Veículo"><span className="plate">{placaDe(o.veiculoId)}</span></td>
+                      <td data-label="Data" className="muted">{dataBR(o.data)}</td>
+                      <td data-label="Status"><Badge variant={statusVariant(o.status)}>{o.status}</Badge></td>
+                      <td className="cell-actions">
+                        <div className="actions">
+                          <button className="icon-btn" title="Detalhes" aria-label={`Ver ${o.titulo}`} onClick={() => navigate(`/ocorrencias/${o.id}`)}><Icon name="eye" size={17} /></button>
+                          <button className="icon-btn" title="Editar" aria-label={`Editar ${o.titulo}`} onClick={() => navigate(`/ocorrencias/${o.id}/editar`)}><Icon name="edit" size={17} /></button>
+                          <button className="icon-btn danger" title="Excluir" aria-label={`Excluir ${o.titulo}`} onClick={() => setExcluir(o)}><Icon name="trash" size={17} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="table-foot">{lista.length} de {ocorrencias.length} ocorrência(s)</div>
+          </>
         )}
       </div>
-
-      <p className="muted mt">{lista.length} de {ocorrencias.length} ocorrência(s)</p>
 
       <ConfirmDialog
         aberto={!!excluir}
         titulo="Excluir ocorrência"
         mensagem={excluir ? `Tem certeza que deseja excluir "${excluir.titulo}"? Esta ação não pode ser desfeita.` : ""}
+        carregando={excluindo}
         onConfirmar={confirmarExclusao}
         onCancelar={() => setExcluir(null)}
       />

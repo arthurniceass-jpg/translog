@@ -1,0 +1,82 @@
+/* Estrutura da aplicação: sidebar, topbar, área de conteúdo e logo. */
+.app-shell { display: flex; min-height: 100vh; }
+
+/* ---- Sidebar ---- */
+.sidebar {
+  position: sticky; top: 0; height: 100vh; width: var(--sidebar-w); flex-shrink: 0;
+  display: flex; flex-direction: column;
+  background: var(--surface); border-right: 1px solid var(--line);
+}
+.sidebar-brand { padding: 1.35rem 1.35rem 1rem; }
+.sidebar-nav { flex: 1; padding: 0 0.8rem; overflow-y: auto; }
+
+.nav-label {
+  padding: 1.1rem 0.7rem 0.4rem;
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint);
+}
+.side-link {
+  display: flex; align-items: center; gap: 0.7rem; margin-bottom: 2px; padding: 0.55rem 0.7rem;
+  border-radius: 8px; font-size: 0.92rem; font-weight: 500; color: var(--muted);
+  transition: background 0.15s, color 0.15s;
+}
+.side-link:hover { background: var(--surface-2); color: var(--ink); }
+.side-link.active { background: var(--primary-soft); color: var(--primary-dark); font-weight: 600; }
+.side-ico { display: grid; place-items: center; }
+
+.sidebar-foot { padding: 0.9rem; border-top: 1px solid var(--line); }
+.side-user { display: flex; align-items: center; gap: 0.65rem; }
+.side-user-info { flex: 1; min-width: 0; }
+.side-user-name, .side-user-mail { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.side-user-name { font-size: 0.86rem; font-weight: 600; color: var(--ink); }
+.side-user-mail { font-size: 0.73rem; color: var(--muted); }
+.side-logout {
+  display: grid; place-items: center; flex-shrink: 0; width: 34px; height: 34px;
+  border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted);
+  transition: background 0.15s, color 0.15s;
+}
+.side-logout:hover { background: var(--danger-soft); color: var(--danger); }
+
+/* ---- Área de conteúdo ---- */
+.content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.topbar {
+  position: sticky; top: 0; z-index: 30; height: 60px; padding: 0 2rem;
+  display: flex; align-items: center; gap: 0.9rem;
+  background: var(--surface); border-bottom: 1px solid var(--line);
+}
+.topbar-title { font-weight: 600; color: var(--ink); }
+.topbar-spacer { flex: 1; }
+.topbar-date { font-size: 0.85rem; color: var(--muted); }
+.topbar-date::first-letter { text-transform: uppercase; }
+.menu-btn {
+  display: none; place-items: center; width: 38px; height: 38px;
+  border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink);
+}
+.sidebar-backdrop { display: none; }
+.app-main { width: 100%; max-width: 1180px; margin: 0 auto; padding: 2rem 2rem 4rem; animation: entrada 0.25s ease; }
+
+/* ---- Logo ---- */
+.logo { display: inline-flex; align-items: center; gap: 0.55rem; }
+.logo-mark { flex-shrink: 0; }
+.logo-text { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.025em; line-height: 1; color: var(--ink); }
+.logo-text span { color: var(--primary); }
+.logo-text.on-dark { color: #fff; }
+.logo-text.on-dark span { color: #bfd3ff; }
+
+/* ---- Cabeçalho de página ---- */
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.page-title { font-size: 1.65rem; font-weight: 700; }
+.page-sub { max-width: 560px; margin-top: 0.3rem; color: var(--muted); }
+.back-link { display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.6rem; font-size: 0.85rem; color: var(--muted); }
+.back-link:hover { color: var(--primary); }
+.back-link svg { transform: rotate(180deg); }
+
+/* ---- Responsivo ---- */
+@media (max-width: 900px) {
+  .sidebar { position: fixed; inset: 0 auto 0 0; z-index: 70; transform: translateX(-100%); transition: transform 0.25s ease; }
+  .sidebar.open { transform: none; box-shadow: var(--shadow-lg); }
+  .menu-btn { display: grid; }
+  .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 65; border: 0; background: rgba(15, 23, 42, 0.5); }
+  .topbar { padding: 0 1rem; }
+  .topbar-date { display: none; }
+  .app-main { padding: 1.5rem 1rem 3rem; }
+}

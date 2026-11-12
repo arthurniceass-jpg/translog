@@ -1,47 +1,49 @@
-import { createContext, useContext } from "react";
-import { useLocalStorage } from "../hooks/useLocalStorage";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { api } from "../services";
+import { session } from "../services/session";
 
 /**
- * AuthContext — autenticação do TransLog.
- *
- * AV1: mock LOCAL (usuários e sessão guardados no localStorage) apenas para
- * prototipar as telas de login/cadastro. NÃO é autenticação de verdade.
- * AV2: será substituído por login real na API Spring Boot (JWT + rota protegida).
+ * AuthContext — autenticação do TransLog (AV2).
+ * Login/cadastro vão para a API (JWT). Ao abrir o app com token salvo,
+ * valida a sessão em /auth/me; qualquer 401 da API derruba a sessão.
  */
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [usuarios, setUsuarios] = useLocalStorage("translog:usuarios", []);
-  const [sessao, setSessao] = useLocalStorage("translog:sessao", null);
+  const [usuario, setUsuario] = useState(() => (session.getToken() ? session.getUser() : null));
+  const [verificando, setVerificando] = useState(() => Boolean(session.getToken()));
 
-  function cadastrar({ nome, email, senha }) {
-    const emailNorm = email.trim().toLowerCase();
-    if (usuarios.some((u) => u.email === emailNorm)) {
-      return { ok: false, error: "Já existe uma conta com este e-mail." };
-    }
-    const novo = { nome: nome.trim(), email: emailNorm, senha };
-    setUsuarios((lista) => [...lista, novo]);
-    setSessao({ nome: novo.nome, email: novo.email });
-    return { ok: true };
-  }
+  const sair = useCallback(() => {
+    api.auth.sair();
+    setUsuario(null);
+  }, []);
 
-  function entrar({ email, senha }) {
-    const emailNorm = email.trim().toLowerCase();
-    const u = usuarios.find((x) => x.email === emailNorm && x.senha === senha);
-    if (!u) return { ok: false, error: "E-mail ou senha inválidos." };
-    setSessao({ nome: u.nome, email: u.email });
-    return { ok: true };
-  }
+  useEffect(() => {
+    session.setUnauthorizedHandler(sair);
+  }, [sair]);
 
-  function sair() {
-    setSessao(null);
-  }
+  // Revalida o token salvo ao carregar a página
+  useEffect(() => {
+    if (!session.getToken()) return;
+    let ativo = true;
+    api.auth
+      .me()
+      .then((u) => ativo && setUsuario(u))
+      .catch(() => ativo && sair())
+      .finally(() => ativo && setVerificando(false));
+    return () => {
+      ativo = false;
+    };
+  }, [sair]);
 
-  return (
-    <AuthContext.Provider value={{ usuario: sessao, autenticado: !!sessao, cadastrar, entrar, sair }}>
-      {children}
-    </AuthContext.Provider>
+  const entrar = useCallback(async (dados) => setUsuario(await api.auth.entrar(dados)), []);
+  const cadastrar = useCallback(async (dados) => setUsuario(await api.auth.cadastrar(dados)), []);
+
+  const value = useMemo(
+    () => ({ usuario, autenticado: !!usuario, verificando, entrar, cadastrar, sair, modo: api.modo }),
+    [usuario, verificando, entrar, cadastrar, sair],
   );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

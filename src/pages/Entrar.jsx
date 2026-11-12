@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { AuthLayout } from "../components/AuthLayout";
 import { Field } from "../components/Field";
@@ -8,11 +8,15 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function Entrar() {
   const navigate = useNavigate();
-  const { entrar } = useAuth();
+  const location = useLocation();
+  const { entrar, autenticado, modo } = useAuth();
 
   const [form, setForm] = useState({ email: "", senha: "" });
   const [erros, setErros] = useState({});
   const [falha, setFalha] = useState("");
+  const [enviando, setEnviando] = useState(false);
+
+  if (autenticado) return <Navigate to="/" replace />;
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -28,29 +32,41 @@ export function Entrar() {
     return Object.keys(e).length === 0;
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setFalha("");
     if (!validar()) return;
-    const r = entrar(form);
-    if (!r.ok) {
-      setFalha(r.error);
-      return;
+    setEnviando(true);
+    try {
+      await entrar(form);
+      navigate(location.state?.from || "/", { replace: true });
+    } catch (err) {
+      setFalha(err.message);
+      setEnviando(false);
     }
-    navigate("/");
   }
 
   return (
     <AuthLayout titulo="Entrar" subtitulo="Acesse o painel de gestão da sua frota.">
       <form onSubmit={handleSubmit} noValidate>
         {falha && <div className="alert alert-danger">{falha}</div>}
-        <Field label="E-mail" name="email" type="email" value={form.email} onChange={handleChange} error={erros.email} required placeholder="voce@empresa.com" />
-        <Field label="Senha" name="senha" type="password" value={form.senha} onChange={handleChange} error={erros.senha} required placeholder="••••••••" />
-        <button type="submit" className="btn btn-primary" style={{ width: "100%", marginTop: "0.25rem" }}>Entrar</button>
+        <Field label="E-mail" name="email" type="email" autoComplete="email" value={form.email} onChange={handleChange} error={erros.email} required placeholder="voce@empresa.com" />
+        <Field label="Senha" name="senha" type="password" autoComplete="current-password" value={form.senha} onChange={handleChange} error={erros.senha} required placeholder="Sua senha" />
+        <button type="submit" className="btn btn-primary btn-block" disabled={enviando}>
+          {enviando && <span className="spinner" />} Entrar
+        </button>
       </form>
       <p className="auth-switch">
-        Não tem conta? <Link to="/cadastro">Cadastre-se</Link>
+        Ainda não tem conta? <Link to="/cadastro">Criar conta</Link>
       </p>
+      {modo === "demo" && (
+        <div className="demo-box">
+          <b>Modo demo</b> — sem back-end conectado. Use <b>admin@translog.com</b> / <b>admin123</b>{" "}
+          <button type="button" onClick={() => setForm({ email: "admin@translog.com", senha: "admin123" })}>
+            preencher
+          </button>
+        </div>
+      )}
     </AuthLayout>
   );
 }

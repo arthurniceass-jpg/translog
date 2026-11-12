@@ -1,108 +1,119 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useData } from "../context/DataContext";
+import { useToast } from "../context/ToastContext";
+import { PageHeader } from "../components/PageHeader";
 import { SearchBar } from "../components/SearchBar";
 import { EmptyState } from "../components/EmptyState";
 import { Badge, statusVariant } from "../components/Badge";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { Icon } from "../components/Icons";
+import { TableSkeleton, ErroCarga } from "../components/Loading";
 import { STATUS_VEICULO } from "../data/constants";
 
 export function Veiculos() {
-  const { veiculos, removeVeiculo } = useData();
-  const location = useLocation();
+  const { veiculos, removeVeiculo, carregando, erro, recarregar } = useData();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
-  const [excluir, setExcluir] = useState(null); // veículo marcado p/ exclusão
-  const [msg, setMsg] = useState(location.state?.msg || "");
+  const [excluir, setExcluir] = useState(null);
+  const [excluindo, setExcluindo] = useState(false);
 
-  // Busca (placa ou modelo) + filtro por status, controlados por estado
   const termo = busca.trim().toLowerCase();
   const lista = veiculos.filter((v) => {
-    const casaBusca =
-      !termo ||
-      v.placa.toLowerCase().includes(termo) ||
-      v.modelo.toLowerCase().includes(termo);
-    const casaStatus = !filtroStatus || v.status === filtroStatus;
-    return casaBusca && casaStatus;
+    const casaBusca = !termo || [v.placa, v.marca, v.modelo].some((t) => t.toLowerCase().includes(termo));
+    return casaBusca && (!filtroStatus || v.status === filtroStatus);
   });
 
-  function confirmarExclusao() {
-    removeVeiculo(excluir.id);
-    setMsg(`Veículo ${excluir.placa} excluído.`);
-    setExcluir(null);
+  async function confirmarExclusao() {
+    setExcluindo(true);
+    try {
+      await removeVeiculo(excluir.id);
+      toast.sucesso(`Veículo ${excluir.placa} excluído.`);
+    } catch (e) {
+      toast.erro(e.message);
+    } finally {
+      setExcluindo(false);
+      setExcluir(null);
+    }
   }
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <span className="kicker">Frota</span>
-          <h1 className="page-title">Veículos</h1>
-          <p className="page-sub">Cadastre e acompanhe os veículos da empresa.</p>
-        </div>
-        <Link to="/veiculos/novo" className="btn btn-primary">+ Novo veículo</Link>
-      </div>
+      <PageHeader titulo="Veículos" sub="Cadastre e acompanhe os veículos da frota.">
+        <Link to="/veiculos/novo" className="btn btn-primary"><Icon name="plus" size={17} /> Novo veículo</Link>
+      </PageHeader>
 
-      {msg && <div className="alert alert-success">{msg}</div>}
+      {erro && <ErroCarga mensagem={erro} onTentar={recarregar} />}
 
       <div className="toolbar">
         <div className="grow">
-          <SearchBar value={busca} onChange={setBusca} placeholder="Buscar por placa ou modelo..." />
+          <SearchBar value={busca} onChange={setBusca} placeholder="Buscar por placa, marca ou modelo..." />
         </div>
-        <select className="select" style={{ maxWidth: 200 }} value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
-          <option value="">Todos os status</option>
-          {STATUS_VEICULO.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
+        <div className="chips">
+          <button className={"chip" + (!filtroStatus ? " on" : "")} onClick={() => setFiltroStatus("")}>Todos</button>
+          {STATUS_VEICULO.map((s) => (
+            <button key={s} className={"chip" + (filtroStatus === s ? " on" : "")} onClick={() => setFiltroStatus(s)}>{s}</button>
+          ))}
+        </div>
       </div>
 
       <div className="card">
-        {lista.length === 0 ? (
+        {carregando ? (
+          <TableSkeleton />
+        ) : lista.length === 0 ? (
           <EmptyState
             icon="truck"
             titulo={veiculos.length === 0 ? "Nenhum veículo cadastrado" : "Nenhum resultado"}
-            texto={veiculos.length === 0 ? "Clique em “Novo veículo” para começar." : "Tente ajustar a busca ou o filtro."}
-          />
+            texto={veiculos.length === 0 ? "Cadastre o primeiro veículo da frota para começar." : "Tente ajustar a busca ou o filtro."}
+          >
+            {veiculos.length === 0 && <Link to="/veiculos/novo" className="btn btn-primary"><Icon name="plus" size={17} /> Novo veículo</Link>}
+          </EmptyState>
         ) : (
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Placa</th>
-                  <th>Veículo</th>
-                  <th>Ano</th>
-                  <th>Status</th>
-                  <th className="text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lista.map((v) => (
-                  <tr key={v.id}>
-                    <td><strong>{v.placa}</strong></td>
-                    <td>{v.marca} {v.modelo}</td>
-                    <td>{v.ano}</td>
-                    <td><Badge variant={statusVariant(v.status)}>{v.status}</Badge></td>
-                    <td>
-                      <div className="actions">
-                        <button className="btn btn-outline btn-sm" onClick={() => navigate(`/veiculos/${v.id}/editar`)}>Editar</button>
-                        <button className="btn btn-danger btn-sm" onClick={() => setExcluir(v)}>Excluir</button>
-                      </div>
-                    </td>
+          <>
+            <div className="table-wrap">
+              <table className="table stack">
+                <thead>
+                  <tr>
+                    <th>Placa</th>
+                    <th>Veículo</th>
+                    <th>Ano</th>
+                    <th>Status</th>
+                    <th className="text-right">Ações</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {lista.map((v) => (
+                    <tr key={v.id}>
+                      <td className="cell-first" data-label="Placa"><span className="plate">{v.placa}</span></td>
+                      <td data-label="Veículo">
+                        <div className="cell-main"><div><strong>{v.marca} {v.modelo}</strong></div></div>
+                      </td>
+                      <td data-label="Ano" className="muted">{v.ano}</td>
+                      <td data-label="Status"><Badge variant={statusVariant(v.status)}>{v.status}</Badge></td>
+                      <td className="cell-actions">
+                        <div className="actions">
+                          <button className="icon-btn" title="Editar" aria-label={`Editar ${v.placa}`} onClick={() => navigate(`/veiculos/${v.id}/editar`)}><Icon name="edit" size={17} /></button>
+                          <button className="icon-btn danger" title="Excluir" aria-label={`Excluir ${v.placa}`} onClick={() => setExcluir(v)}><Icon name="trash" size={17} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="table-foot">{lista.length} de {veiculos.length} veículo(s)</div>
+          </>
         )}
       </div>
-
-      <p className="muted mt">{lista.length} de {veiculos.length} veículo(s)</p>
 
       <ConfirmDialog
         aberto={!!excluir}
         titulo="Excluir veículo"
         mensagem={excluir ? `Tem certeza que deseja excluir o veículo ${excluir.placa}? Esta ação não pode ser desfeita.` : ""}
+        carregando={excluindo}
         onConfirmar={confirmarExclusao}
         onCancelar={() => setExcluir(null)}
       />

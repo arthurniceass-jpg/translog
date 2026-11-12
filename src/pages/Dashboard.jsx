@@ -1,84 +1,95 @@
+import { Link } from "react-router-dom";
 import { useData } from "../context/DataContext";
-import { Badge, statusVariant } from "../components/Badge";
+import { PageHeader } from "../components/PageHeader";
+import { Icon } from "../components/Icons";
+import { Donut, HBars, ColBars } from "../components/Charts";
+import { CardsSkeleton, ErroCarga } from "../components/Loading";
+import { contarPor } from "../lib/format";
 
-// Conta ocorrências de uma lista por chave (status/tipo)
-function contarPor(lista, chave) {
-  return lista.reduce((acc, item) => {
-    acc[item[chave]] = (acc[item[chave]] || 0) + 1;
-    return acc;
-  }, {});
-}
-
-function Distribuicao({ titulo, dados, total }) {
-  const chaves = Object.keys(dados);
-  return (
-    <div className="card card-pad">
-      <h2 style={{ fontSize: "1.05rem", marginBottom: "1rem" }}>{titulo}</h2>
-      {chaves.length === 0 ? (
-        <p className="muted">Sem dados.</p>
-      ) : (
-        <div style={{ display: "grid", gap: "0.85rem" }}>
-          {chaves.map((k) => {
-            const pct = total ? Math.round((dados[k] / total) * 100) : 0;
-            return (
-              <div key={k}>
-                <div className="row" style={{ justifyContent: "space-between", marginBottom: "0.3rem" }}>
-                  <Badge variant={statusVariant(k)}>{k}</Badge>
-                  <span className="muted" style={{ fontSize: "0.85rem" }}>{dados[k]} ({pct}%)</span>
-                </div>
-                <div style={{ height: 8, background: "var(--surface-2)", borderRadius: 999 }}>
-                  <div style={{ width: `${pct}%`, height: "100%", background: "var(--primary)", borderRadius: 999 }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+/** Últimos 6 meses (incluindo o atual) com a contagem de ocorrências de cada um. */
+function serieMensal(ocorrencias) {
+  const hoje = new Date();
+  return Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - (5 - i), 1);
+    const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return {
+      rotulo: d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", ""),
+      valor: ocorrencias.filter((o) => o.data.startsWith(chave)).length,
+    };
+  });
 }
 
 export function Dashboard() {
-  const { veiculos, motoristas, ocorrencias } = useData();
+  const { veiculos, motoristas, ocorrencias, carregando, erro, recarregar } = useData();
 
-  const abertas = ocorrencias.filter((o) => o.status === "Aberta").length;
-  const disponiveis = veiculos.filter((v) => v.status === "Disponível").length;
+  const abertas = ocorrencias.filter((o) => o.status !== "Resolvida").length;
+  const resolvidas = ocorrencias.filter((o) => o.status === "Resolvida").length;
+  const taxa = ocorrencias.length ? Math.round((resolvidas / ocorrencias.length) * 100) : 0;
+  const emOperacao = veiculos.filter((v) => v.status === "Em uso").length;
+
+  const porVeiculo = contarPor(
+    ocorrencias.map((o) => ({ placa: veiculos.find((v) => String(v.id) === String(o.veiculoId))?.placa || "—" })),
+    "placa",
+  );
+  const topVeiculos = Object.fromEntries(Object.entries(porVeiculo).sort((a, b) => b[1] - a[1]).slice(0, 5));
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <span className="kicker">Visão geral</span>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-sub">Indicadores da operação calculados a partir dos dados.</p>
-        </div>
-      </div>
+      <PageHeader titulo="Dashboard" sub="Indicadores da operação calculados a partir dos dados em tempo real." />
 
-      <div className="stats-grid">
-        <div className="card stat">
-          <div className="stat-label">Veículos</div>
-          <div className="stat-value">{veiculos.length}</div>
-        </div>
-        <div className="card stat">
-          <div className="stat-label">Veículos disponíveis</div>
-          <div className="stat-value" style={{ color: "var(--success)" }}>{disponiveis}</div>
-        </div>
-        <div className="card stat">
-          <div className="stat-label">Motoristas</div>
-          <div className="stat-value">{motoristas.length}</div>
-        </div>
-        <div className="card stat">
-          <div className="stat-label">Ocorrências abertas</div>
-          <div className="stat-value" style={{ color: abertas > 0 ? "var(--danger)" : "var(--success)" }}>{abertas}</div>
-        </div>
-      </div>
+      {erro && <ErroCarga mensagem={erro} onTentar={recarregar} />}
 
-      <div className="stats-grid mt">
-        <Distribuicao titulo="Veículos por status" dados={contarPor(veiculos, "status")} total={veiculos.length} />
-        <Distribuicao titulo="Motoristas por status" dados={contarPor(motoristas, "status")} total={motoristas.length} />
-        <Distribuicao titulo="Ocorrências por tipo" dados={contarPor(ocorrencias, "tipo")} total={ocorrencias.length} />
-        <Distribuicao titulo="Ocorrências por status" dados={contarPor(ocorrencias, "status")} total={ocorrencias.length} />
-      </div>
+      {carregando ? (
+        <CardsSkeleton />
+      ) : (
+        <>
+          <div className="stats-grid">
+            <Link to="/veiculos" className="card stat">
+              <span className="stat-ico blue"><Icon name="truck" size={22} /></span>
+              <div><div className="stat-label">Veículos em operação</div><div className="stat-value">{emOperacao}<span className="stat-note"> / {veiculos.length}</span></div></div>
+            </Link>
+            <Link to="/motoristas" className="card stat">
+              <span className="stat-ico blue"><Icon name="users" size={22} /></span>
+              <div><div className="stat-label">Motoristas</div><div className="stat-value">{motoristas.length}</div></div>
+            </Link>
+            <Link to="/ocorrencias" className="card stat">
+              <span className="stat-ico red"><Icon name="alert" size={22} /></span>
+              <div><div className="stat-label">Ocorrências em aberto</div><div className="stat-value">{abertas}</div></div>
+            </Link>
+            <div className="card stat">
+              <span className="stat-ico green"><Icon name="check" size={22} /></span>
+              <div><div className="stat-label">Taxa de resolução</div><div className="stat-value">{taxa}%</div></div>
+            </div>
+          </div>
+
+          <div className="grid-eq mt">
+            <div className="card card-pad">
+              <h2 className="card-title" style={{ marginBottom: "1.2rem" }}>Veículos por status</h2>
+              <Donut dados={contarPor(veiculos, "status")} rotuloCentro="veículos" />
+            </div>
+            <div className="card card-pad">
+              <h2 className="card-title" style={{ marginBottom: "1.2rem" }}>Motoristas por status</h2>
+              <Donut dados={contarPor(motoristas, "status")} rotuloCentro="motoristas" />
+            </div>
+            <div className="card card-pad">
+              <h2 className="card-title" style={{ marginBottom: "1.2rem" }}>Ocorrências por mês</h2>
+              <ColBars serie={serieMensal(ocorrencias)} />
+            </div>
+            <div className="card card-pad">
+              <h2 className="card-title" style={{ marginBottom: "1.2rem" }}>Ocorrências por tipo</h2>
+              <HBars dados={contarPor(ocorrencias, "tipo")} />
+            </div>
+            <div className="card card-pad">
+              <h2 className="card-title" style={{ marginBottom: "1.2rem" }}>Ocorrências por status</h2>
+              <Donut dados={contarPor(ocorrencias, "status")} rotuloCentro="ocorrências" />
+            </div>
+            <div className="card card-pad">
+              <h2 className="card-title" style={{ marginBottom: "1.2rem" }}>Veículos com mais ocorrências</h2>
+              <HBars dados={topVeiculos} />
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }
