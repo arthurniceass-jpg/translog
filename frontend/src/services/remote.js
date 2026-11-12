@@ -1,7 +1,7 @@
 import { http } from "./http";
 import { session } from "./session";
 
-/** Adaptador REAL: conversa com a API Spring Boot (contrato em docs/ e backend/README.md). */
+/** Adaptador REAL: conversa com a API Spring Boot (contrato em backend/README.md). */
 export const remote = {
   modo: "api",
 
