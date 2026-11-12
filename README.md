@@ -17,7 +17,7 @@ Sistema para uma empresa de transporte controlar **veículos**, **motoristas** e
 
 ## Estrutura do repositório
 ```
-/                  front-end (React + Vite)
+frontend/          front-end (React + Vite)
   src/
     components/    peças reutilizáveis (Layout, Field, Badge, Charts...)
     context/       estado global (Auth, Data, Toast)
@@ -26,18 +26,18 @@ Sistema para uma empresa de transporte controlar **veículos**, **motoristas** e
     styles/        CSS dividido por responsabilidade
     lib/           funções puras (formatação, CSV)
 backend/           API Spring Boot (veja backend/README.md)
-docs/              prompts e documentação da equipe
 ```
 
 ## Como rodar o front-end
 ```bash
+cd frontend
 npm install
 npm run dev          # http://localhost:5173
 ```
 Sem configuração, roda em **modo demo** (dados no `localStorage`, sem back-end).
 Login demo: `admin@translog.com` / `admin123`.
 
-Para usar a API, copie `.env.example` para `.env.local` e defina:
+Para usar a API, copie `frontend/.env.example` para `frontend/.env.local` e defina:
 ```
 VITE_API_URL=http://localhost:8080/api
 ```
@@ -74,7 +74,6 @@ Detalhes, variáveis de ambiente e contrato dos endpoints em [`backend/README.md
 | Dashboard / integração | pendente | Gabriel Fernando |
 | Documentação e testes de aceitação | pendente | Lucas Cardoso |
 
-Os prompts prontos para cada um estão em [`docs/PROMPTS-EQUIPE.md`](docs/PROMPTS-EQUIPE.md).
 Enquanto um módulo não existe na API, o front mostra um aviso de carregamento
 e os demais módulos continuam funcionando.
 
