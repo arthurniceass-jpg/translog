@@ -1,7 +1,7 @@
 # TransLog API (back-end)
 
 API REST do TransLog — gestão de **veículos**, **motoristas** e **ocorrências** — em **Spring Boot 4.1 / Java 21**,
-com JWT, Flyway e Swagger. O front (React/Vite) fica na raiz do repositório.
+com JWT, Flyway e Swagger. O front (React/Vite) fica em `../frontend`.
 
 ## Rodar local (sem instalar nada além do Java 21)
 
@@ -15,7 +15,7 @@ cd backend
 - API em `http://localhost:8080` · Swagger em `http://localhost:8080/swagger-ui.html`
 - Testes: `./mvnw verify`
 
-Com Postgres (perfil `prod`): `docker compose up --build` (sobe banco + API) ou defina as variáveis abaixo e rode
+Com Postgres (perfil `prod`): copie `.env.example` para `.env`, preencha `JWT_SECRET` e `DB_PASSWORD` e rode `docker compose up --build` (sobe banco + API) ou defina as variáveis abaixo e rode
 `SPRING_PROFILES_ACTIVE=prod ./mvnw spring-boot:run`. O perfil `prod` **não** carrega dados de demonstração.
 
 ## Variáveis de ambiente
@@ -23,7 +23,7 @@ Com Postgres (perfil `prod`): `docker compose up --build` (sobe banco + API) ou 
 | Variável | Padrão | Uso |
 |---|---|---|
 | `PORT` | `8080` | porta HTTP |
-| `JWT_SECRET` | segredo de dev | **obrigatório em prod**, mínimo 32 caracteres |
+| `JWT_SECRET` | — (dev gera uma chave aleatória a cada execução) | **obrigatório em prod**, mínimo 32 caracteres |
 | `JWT_EXPIRACAO_MINUTOS` | `120` | validade do token |
 | `CORS_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | origens permitidas, separadas por vírgula |
 | `DATABASE_URL` | — | prod: `jdbc:postgresql://host:5432/translog` |
