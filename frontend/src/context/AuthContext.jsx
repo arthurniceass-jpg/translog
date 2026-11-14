@@ -22,14 +22,16 @@ export function AuthProvider({ children }) {
     session.setUnauthorizedHandler(sair);
   }, [sair]);
 
-  // Revalida o token salvo ao carregar a página
+  // Revalida o token salvo ao carregar a página. Só encerra a sessão se a API
+  // recusar o token (401/403); se o servidor estiver fora do ar, mantém o usuário
+  // logado e as páginas mostram o erro com "Tentar de novo".
   useEffect(() => {
     if (!session.getToken()) return;
     let ativo = true;
     api.auth
       .me()
       .then((u) => ativo && setUsuario(u))
-      .catch(() => ativo && sair())
+      .catch((e) => ativo && [401, 403].includes(e.status) && sair())
       .finally(() => ativo && setVerificando(false));
     return () => {
       ativo = false;

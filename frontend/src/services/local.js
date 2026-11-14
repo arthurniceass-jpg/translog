@@ -47,10 +47,22 @@ const gravar = (chave, lista) => localStorage.setItem(chave, JSON.stringify(list
 const chaveDe = (recurso) => `translog:demo:${recurso}`;
 const lerRecurso = (recurso) => ler(chaveDe(recurso), SEEDS[recurso]);
 
-function usuarios() {
-  return ler("translog:demo:usuarios", () => [
-    { id: 1, nome: "Administrador", email: "admin@translog.com", senha: "admin123" },
+/**
+ * Contas do modo demo. A senha NUNCA é guardada: só o hash SHA-256 dela.
+ * (o hash abaixo é de "admin123", a credencial de demonstração mostrada no login)
+ */
+const K_CONTAS = "translog:demo:contas";
+localStorage.removeItem("translog:demo:usuarios"); // formato antigo, que guardava a senha
+
+function contas() {
+  return ler(K_CONTAS, () => [
+    { id: 1, nome: "Administrador", email: "admin@translog.com", senhaHash: "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9" },
   ]);
+}
+
+async function hashSenha(senha) {
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(senha));
+  return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 function validarUnicos(recurso, lista, dados, idAtual) {
@@ -73,18 +85,19 @@ export const local = {
 
   auth: {
     async cadastrar({ nome, email, senha }) {
-      const lista = usuarios();
+      const lista = contas();
       const mail = email.trim().toLowerCase();
       if (lista.some((u) => u.email === mail)) throw new ApiError("Já existe uma conta com este e-mail.", { status: 409 });
-      const novo = { id: Date.now(), nome: nome.trim(), email: mail, senha };
-      gravar("translog:demo:usuarios", [...lista, novo]);
+      const novo = { id: Date.now(), nome: nome.trim(), email: mail, senhaHash: await hashSenha(senha) };
+      gravar(K_CONTAS, [...lista, novo]);
       const usuario = { id: novo.id, nome: novo.nome, email: novo.email };
       session.save("demo-token", usuario);
       return atraso(usuario);
     },
     async entrar({ email, senha }) {
       const mail = email.trim().toLowerCase();
-      const u = usuarios().find((x) => x.email === mail && x.senha === senha);
+      const hash = await hashSenha(senha);
+      const u = contas().find((x) => x.email === mail && x.senhaHash === hash);
       if (!u) throw new ApiError("E-mail ou senha inválidos.", { status: 401 });
       const usuario = { id: u.id, nome: u.nome, email: u.email };
       session.save("demo-token", usuario);
