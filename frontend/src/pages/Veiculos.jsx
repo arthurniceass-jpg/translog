@@ -12,7 +12,8 @@ import { TableSkeleton, ErroCarga } from "../components/Loading";
 import { STATUS_VEICULO } from "../data/constants";
 
 export function Veiculos() {
-  const { veiculos, removeVeiculo, carregando, erro, recarregar } = useData();
+  const { veiculos, removeVeiculo, carregando, erroDe, recarregar } = useData();
+  const erro = erroDe("veiculos");
   const navigate = useNavigate();
   const toast = useToast();
 

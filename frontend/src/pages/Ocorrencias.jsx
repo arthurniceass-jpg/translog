@@ -13,7 +13,8 @@ import { STATUS_OCORRENCIA, TIPOS_OCORRENCIA, ICONE_TIPO } from "../data/constan
 import { dataBR } from "../lib/format";
 
 export function Ocorrencias() {
-  const { ocorrencias, veiculos, removeOcorrencia, carregando, erro, recarregar } = useData();
+  const { ocorrencias, veiculos, removeOcorrencia, carregando, erroDe, recarregar } = useData();
+  const erro = erroDe("ocorrencias", "veiculos");
   const navigate = useNavigate();
   const toast = useToast();
 

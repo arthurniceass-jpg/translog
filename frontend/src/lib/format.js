@@ -21,6 +21,12 @@ export function mascararTelefone(valor) {
 export const iniciais = (nome = "") =>
   nome.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join("") || "?";
 
+/** Data de hoje (AAAA-MM-DD) no fuso local; toISOString() usa UTC e vira o dia depois das 21h no Brasil. */
+export function hojeISO(data = new Date()) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${data.getFullYear()}-${p(data.getMonth() + 1)}-${p(data.getDate())}`;
+}
+
 export const dataBR = (iso) => (iso ? new Date(iso + "T00:00:00").toLocaleDateString("pt-BR") : "—");
 
 export const mesAno = (iso) =>

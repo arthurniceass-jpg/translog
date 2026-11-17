@@ -6,9 +6,9 @@ import { PageHeader } from "../components/PageHeader";
 import { FormGate } from "../components/FormGate";
 import { Field } from "../components/Field";
 import { STATUS_OCORRENCIA, TIPOS_OCORRENCIA } from "../data/constants";
+import { hojeISO } from "../lib/format";
 
-const hoje = new Date().toISOString().slice(0, 10);
-const VAZIO = { titulo: "", tipo: "", data: hoje, veiculoId: "", motoristaId: "", status: "Aberta", descricao: "" };
+const vazio = () => ({ titulo: "", tipo: "", data: hojeISO(), veiculoId: "", motoristaId: "", status: "Aberta", descricao: "" });
 
 export function OcorrenciaForm() {
   const { id } = useParams();
@@ -29,7 +29,7 @@ function Formulario({ id, existente }) {
   const editando = Boolean(id);
 
   const [form, setForm] = useState(
-    existente ? { ...existente, veiculoId: String(existente.veiculoId), motoristaId: existente.motoristaId ? String(existente.motoristaId) : "" } : VAZIO,
+    existente ? { ...existente, veiculoId: String(existente.veiculoId), motoristaId: existente.motoristaId ? String(existente.motoristaId) : "" } : vazio(),
   );
   const [erros, setErros] = useState({});
   const [salvando, setSalvando] = useState(false);
@@ -44,6 +44,7 @@ function Formulario({ id, existente }) {
     if (!form.titulo.trim()) e.titulo = "Informe o título.";
     if (!form.tipo) e.tipo = "Selecione o tipo.";
     if (!form.data) e.data = "Informe a data.";
+    else if (form.data > hojeISO()) e.data = "A data não pode ser no futuro.";
     if (!form.veiculoId) e.veiculoId = "Selecione o veículo.";
     if (!form.status) e.status = "Selecione o status.";
     if (!form.descricao.trim()) e.descricao = "Descreva a ocorrência.";
@@ -89,7 +90,7 @@ function Formulario({ id, existente }) {
         <div className="form-grid">
           <Field full label="Título" name="titulo" value={form.titulo} onChange={handleChange} error={erros.titulo} required placeholder="Ex.: Colisão no pátio" />
           <Field label="Tipo" name="tipo" as="select" options={TIPOS_OCORRENCIA} value={form.tipo} onChange={handleChange} error={erros.tipo} required />
-          <Field label="Data" name="data" type="date" value={form.data} onChange={handleChange} error={erros.data} required />
+          <Field label="Data" name="data" type="date" value={form.data} onChange={handleChange} error={erros.data} required max={hojeISO()} />
           <Field full label="Descrição" name="descricao" as="textarea" value={form.descricao} onChange={handleChange} error={erros.descricao} required placeholder="Descreva o que aconteceu, local e providências..." />
         </div>
 

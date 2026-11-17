@@ -20,7 +20,8 @@ function serieMensal(ocorrencias) {
 }
 
 export function Dashboard() {
-  const { veiculos, motoristas, ocorrencias, carregando, erro, recarregar } = useData();
+  const { veiculos, motoristas, ocorrencias, carregando, erroDe, recarregar } = useData();
+  const erro = erroDe("veiculos", "motoristas", "ocorrencias");
 
   const abertas = ocorrencias.filter((o) => o.status !== "Resolvida").length;
   const resolvidas = ocorrencias.filter((o) => o.status === "Resolvida").length;

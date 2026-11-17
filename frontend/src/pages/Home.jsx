@@ -10,7 +10,8 @@ import { ICONE_TIPO } from "../data/constants";
 import { contarPor, dataBR, saudacao } from "../lib/format";
 
 export function Home() {
-  const { veiculos, motoristas, ocorrencias, carregando, erro, recarregar } = useData();
+  const { veiculos, motoristas, ocorrencias, carregando, erroDe, recarregar } = useData();
+  const erro = erroDe("veiculos", "motoristas", "ocorrencias");
   const { usuario } = useAuth();
 
   const abertas = ocorrencias.filter((o) => o.status !== "Resolvida").length;

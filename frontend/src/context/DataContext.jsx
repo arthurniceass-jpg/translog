@@ -7,6 +7,8 @@ import { useAuth } from "./AuthContext";
  * Carrega veículos, motoristas e ocorrências da API quando há sessão e
  * expõe CRUD assíncrono. As mutações propagam ApiError para o formulário
  * mostrar a mensagem/erros de campo; a lista local é atualizada ao final.
+ * Falhas de carga ficam por recurso: cada página pede só o erro dos dados que usa
+ * (`erroDe("ocorrencias", "veiculos")`), então um módulo fora do ar não "suja" as outras.
  */
 const DataContext = createContext(null);
 
@@ -17,22 +19,21 @@ export function DataProvider({ children }) {
   const { autenticado } = useAuth();
   const [dados, setDados] = useState({ veiculos: [], motoristas: [], ocorrencias: [] });
   const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState("");
+  const [falhas, setFalhas] = useState({}); // { recurso: mensagem }
 
   const carregar = useCallback(async () => {
     setCarregando(true);
-    setErro("");
     // Cada recurso carrega de forma independente: se um falhar (ex.: módulo
     // ainda não publicado na API), os outros continuam funcionando.
     const resultados = await Promise.allSettled(RECURSOS.map((r) => api.listar(r)));
     const proximo = {};
-    const falhas = [];
+    const novasFalhas = {};
     resultados.forEach((res, i) => {
       proximo[RECURSOS[i]] = res.status === "fulfilled" ? res.value : [];
-      if (res.status === "rejected") falhas.push(RECURSOS[i]);
+      if (res.status === "rejected") novasFalhas[RECURSOS[i]] = res.reason.message;
     });
     setDados(proximo);
-    if (falhas.length) setErro(`Não foi possível carregar: ${falhas.join(", ")}. ${resultados.find((r) => r.status === "rejected").reason.message}`);
+    setFalhas(novasFalhas);
     setCarregando(false);
   }, []);
 
@@ -40,6 +41,7 @@ export function DataProvider({ children }) {
     if (autenticado) carregar();
     else {
       setDados({ veiculos: [], motoristas: [], ocorrencias: [] });
+      setFalhas({});
       setCarregando(true); // próximo login começa em "carregando"
     }
   }, [autenticado, carregar]);
@@ -66,17 +68,24 @@ export function DataProvider({ children }) {
     const m = crud("motoristas");
     const o = crud("ocorrencias");
 
+    /** Mensagem de erro dos recursos pedidos que falharam ("" se todos carregaram). */
+    const erroDe = (...recursos) => {
+      const comFalha = recursos.filter((r) => falhas[r]);
+      if (!comFalha.length) return "";
+      return `Não foi possível carregar ${comFalha.join(", ")}. ${falhas[comFalha[0]]}`;
+    };
+
     return {
       ...dados,
       carregando,
-      erro,
+      erroDe,
       recarregar: carregar,
 
       addVeiculo: v.criar, updateVeiculo: v.atualizar, removeVeiculo: v.remover, getVeiculo: v.obter,
       addMotorista: m.criar, updateMotorista: m.atualizar, removeMotorista: m.remover, getMotorista: m.obter,
       addOcorrencia: o.criar, updateOcorrencia: o.atualizar, removeOcorrencia: o.remover, getOcorrencia: o.obter,
     };
-  }, [dados, carregando, erro, carregar]);
+  }, [dados, carregando, falhas, carregar]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

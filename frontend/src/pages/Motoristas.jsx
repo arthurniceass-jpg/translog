@@ -14,7 +14,8 @@ import { STATUS_MOTORISTA } from "../data/constants";
 import { mascararTelefone } from "../lib/format";
 
 export function Motoristas() {
-  const { motoristas, removeMotorista, carregando, erro, recarregar } = useData();
+  const { motoristas, removeMotorista, carregando, erroDe, recarregar } = useData();
+  const erro = erroDe("motoristas");
   const navigate = useNavigate();
   const toast = useToast();
 
