@@ -57,9 +57,17 @@ Base `/api`, JSON, campos em pt-BR, ids numéricos. Toda rota exige `Authorizati
 `id, nome, cpf (11 dígitos), cnh (11 dígitos), categorias ["A".."E"], telefone (10–11 dígitos), status "Disponível" | "Em viagem" | "Inativo"`.
 Categorias ficam na tabela auxiliar `motorista_categorias` (uma linha por categoria).
 
-### Ocorrências (a implementar — ver `src/main/java/br/com/translog/ocorrencia/README.md`)
+### Ocorrências (implementado — ver `src/main/java/br/com/translog/ocorrencia/README.md`)
 `id, titulo, tipo "Manutenção" | "Acidente" | "Atraso" | "Outro", descricao, data (yyyy-MM-dd), status "Aberta" | "Em análise" | "Resolvida", veiculoId, motoristaId|null`.
-Filtros: `q, status, tipo, de, ate`.
+
+`GET /api/ocorrencias?q=&status=&tipo=&de=&ate=` · `GET /{id}` · `POST` (201) · `PUT /{id}` · `DELETE /{id}` (204).
+
+- Título obrigatório (máx. 160), descrição obrigatória (máx. 2000), tipo, data, status e veículo obrigatórios.
+- `q` busca parcialmente em título/descrição sem distinguir maiúsculas de minúsculas.
+- Filtros combináveis: `q`, `status`, `tipo`, `de`, `ate`; datas inclusivas; ordenação por `data DESC, id DESC`.
+- Veículo ou motorista informado inexistente → `404`; motorista pode ser omitido ou `null`.
+- `de > ate`, data mal formatada ou enum inválido → `400`.
+- Funciona sem o módulo de motoristas: valida o ID diretamente na tabela já criada pela V1.
 
 ### Dashboard (a implementar)
 `GET /api/dashboard/resumo` → contagens por status/tipo de veículos, motoristas e ocorrências.
@@ -86,7 +94,7 @@ src/main/java/br/com/translog/
   auth/        cadastro/login/me, JwtService, Usuario
   veiculo/     MÓDULO DE REFERÊNCIA completo (entity, repository, service, controller, dto/, mapper)
   motorista/   TODO (README + enum pronto)
-  ocorrencia/  TODO (README + enums prontos)
+  ocorrencia/  CRUD, filtros combináveis, validação de vínculos, DTOs e mapper
 src/main/resources/
   db/migration/V1__schema_inicial.sql   todas as tabelas (usuarios, veiculos, motoristas, motorista_categorias, ocorrencias)
   db/seed/V100__dados_demonstracao.sql  só no perfil dev

@@ -134,7 +134,7 @@ Motoristas, ocorrências e dashboard seguem o mesmo padrão; o contrato completo
 | Interface | layout inicial | novo layout, gráficos no dashboard, histórico por mês | `src/styles/`, `pages/` |
 
 ## Limitações e contingência
-- **Módulos em andamento:** na API, autenticação e veículos estão prontos; motoristas, ocorrências e
+- **Módulos em andamento:** na API, autenticação, veículos e ocorrências estão prontos; motoristas e
   dashboard estão sendo implementados pela equipe. Enquanto um módulo não existe, a página mostra o
   erro com **Tentar de novo** e o restante do sistema continua funcionando.
 - **Servidor fora do ar:** o login mostra "Não foi possível conectar ao servidor"; quem já estava logado
