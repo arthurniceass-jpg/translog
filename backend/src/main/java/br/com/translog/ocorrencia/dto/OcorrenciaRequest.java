@@ -4,6 +4,7 @@ import br.com.translog.ocorrencia.StatusOcorrencia;
 import br.com.translog.ocorrencia.TipoOcorrencia;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
@@ -21,6 +22,7 @@ public record OcorrenciaRequest(
         String descricao,
 
         @NotNull(message = "Informe a data.")
+        @PastOrPresent(message = "A data não pode ser no futuro.")
         LocalDate data,
 
         @NotNull(message = "Selecione o status.")

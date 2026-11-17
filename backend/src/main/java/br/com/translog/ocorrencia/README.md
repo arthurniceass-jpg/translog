@@ -39,8 +39,8 @@ Exemplo: `GET /api/ocorrencias?q=pátio&status=Em%20análise&tipo=Manutenção&d
 ## Regras e erros
 
 - Ocorrência inexistente: `404`, `Ocorrência não encontrada.`
-- Veículo inexistente no POST ou PUT: `404`, `Veículo informado não existe.`
-- Motorista informado e inexistente no POST ou PUT: `404`, `Motorista informado não existe.`
+- Veículo inexistente no POST ou PUT: `400` com `fieldErrors.veiculoId`, `Veículo informado não existe.`
+- Motorista informado e inexistente no POST ou PUT: `400` com `fieldErrors.motoristaId`, `Motorista informado não existe.`
 - Intervalo invertido: `400`, `A data inicial não pode ser maior que a final.`
 - Datas mal formatadas ou enums inválidos: `400` no formato padrão do `GlobalExceptionHandler`.
 - Campos obrigatórios e limites de tamanho: `400` com `fieldErrors` em português.

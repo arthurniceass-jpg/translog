@@ -42,10 +42,15 @@ public class GlobalExceptionHandler {
         return erro(HttpStatus.BAD_REQUEST, msg, req, null);
     }
 
-    @ExceptionHandler({ValorInvalidoException.class, MethodArgumentTypeMismatchException.class})
-    public ResponseEntity<ApiError> valorInvalido(Exception ex, HttpServletRequest req) {
-        String msg = ex instanceof ValorInvalidoException ? ex.getMessage() : "Parâmetro inválido na requisição.";
-        return erro(HttpStatus.BAD_REQUEST, msg, req, null);
+    @ExceptionHandler(ValorInvalidoException.class)
+    public ResponseEntity<ApiError> valorInvalido(ValorInvalidoException ex, HttpServletRequest req) {
+        Map<String, String> campos = ex.getCampo() == null ? null : Map.of(ex.getCampo(), ex.getMessage());
+        return erro(HttpStatus.BAD_REQUEST, ex.getMessage(), req, campos);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> parametroInvalido(HttpServletRequest req) {
+        return erro(HttpStatus.BAD_REQUEST, "Parâmetro inválido na requisição.", req, null);
     }
 
     /** Query string com bytes que não são UTF-8 válido (cliente com encoding errado). */

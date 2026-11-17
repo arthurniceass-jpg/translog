@@ -88,12 +88,13 @@ public class OcorrenciaService {
         return repo.findById(id).orElseThrow(() -> new NotFoundException("Ocorrência não encontrada."));
     }
 
+    /** Vínculo inexistente é erro de validação do corpo (400 no campo), não recurso da URL ausente (404). */
     private void validarVinculos(OcorrenciaRequest request) {
         if (!veiculos.existsById(request.veiculoId())) {
-            throw new NotFoundException("Veículo informado não existe.");
+            throw new ValorInvalidoException("veiculoId", "Veículo informado não existe.");
         }
         if (request.motoristaId() != null && repo.contarMotoristas(request.motoristaId()) == 0) {
-            throw new NotFoundException("Motorista informado não existe.");
+            throw new ValorInvalidoException("motoristaId", "Motorista informado não existe.");
         }
     }
 }

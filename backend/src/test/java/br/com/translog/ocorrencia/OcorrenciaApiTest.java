@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.LongStream;
@@ -228,15 +229,16 @@ class OcorrenciaApiTest extends ApiTestBase {
 
     @ParameterizedTest
     @ValueSource(strings = {"POST", "PUT"})
-    void veiculoInexistenteRetorna404SemAlterarOcorrencia(String metodo) throws Exception {
+    void veiculoInexistenteRetorna400NoCampoSemAlterarOcorrencia(String metodo) throws Exception {
         Map<String, Object> dados = dados(criarVeiculo());
         long id = criar(dados);
         long veiculoOriginal = (Long) dados.get("veiculoId");
         dados.put("veiculoId", ID_INEXISTENTE);
 
         mvc.perform(comToken(escrita(metodo, id)).content(json.writeValueAsString(dados)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Veículo informado não existe."));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Veículo informado não existe."))
+                .andExpect(jsonPath("$.fieldErrors.veiculoId").value("Veículo informado não existe."));
         mvc.perform(comToken(get(BASE + "/" + id)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.veiculoId").value(veiculoOriginal));
@@ -245,14 +247,15 @@ class OcorrenciaApiTest extends ApiTestBase {
 
     @ParameterizedTest
     @ValueSource(strings = {"POST", "PUT"})
-    void motoristaInexistenteRetorna404SemAlterarOcorrencia(String metodo) throws Exception {
+    void motoristaInexistenteRetorna400NoCampoSemAlterarOcorrencia(String metodo) throws Exception {
         Map<String, Object> dados = dados(criarVeiculo());
         long id = criar(dados);
         dados.put("motoristaId", ID_INEXISTENTE);
 
         mvc.perform(comToken(escrita(metodo, id)).content(json.writeValueAsString(dados)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Motorista informado não existe."));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Motorista informado não existe."))
+                .andExpect(jsonPath("$.fieldErrors.motoristaId").value("Motorista informado não existe."));
         mvc.perform(comToken(get(BASE + "/" + id)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.motoristaId").value(nullValue()));
@@ -285,6 +288,19 @@ class OcorrenciaApiTest extends ApiTestBase {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors.titulo").value("O título deve ter no máximo 160 caracteres."))
                 .andExpect(jsonPath("$.fieldErrors.descricao").value("A descrição deve ter no máximo 2000 caracteres."));
+    }
+
+    @Test
+    void rejeitaDataNoFuturoEAceitaHoje() throws Exception {
+        Map<String, Object> dados = dados(criarVeiculo());
+        dados.put("data", LocalDate.now().plusDays(1).toString());
+
+        mvc.perform(comToken(post(BASE)).content(json.writeValueAsString(dados)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.data").value("A data não pode ser no futuro."));
+
+        dados.put("data", LocalDate.now().toString());
+        criar(dados);
     }
 
     @Test

@@ -65,7 +65,8 @@ Categorias ficam na tabela auxiliar `motorista_categorias` (uma linha por catego
 - Título obrigatório (máx. 160), descrição obrigatória (máx. 2000), tipo, data, status e veículo obrigatórios.
 - `q` busca parcialmente em título/descrição sem distinguir maiúsculas de minúsculas.
 - Filtros combináveis: `q`, `status`, `tipo`, `de`, `ate`; datas inclusivas; ordenação por `data DESC, id DESC`.
-- Veículo ou motorista informado inexistente → `404`; motorista pode ser omitido ou `null`.
+- Veículo ou motorista informado inexistente → `400` com o erro no campo (`fieldErrors`); motorista pode ser omitido ou `null`.
+- Data no futuro → `400` (`fieldErrors.data`).
 - `de > ate`, data mal formatada ou enum inválido → `400`.
 - Funciona sem o módulo de motoristas: valida o ID diretamente na tabela já criada pela V1.
 
@@ -105,7 +106,7 @@ src/main/resources/
 2. A **tabela já existe** em `V1__schema_inicial.sql`. Se precisar mudar o schema, crie `V2__...sql` (nunca edite a V1).
 3. Enum com acento: copie `StatusVeiculo` (rótulo no JSON, nome do enum no banco).
 4. Validação em português nos DTOs (`@NotBlank(message = "...")`) — vira `fieldErrors` automaticamente.
-5. Erros: lance `NotFoundException` (404), `ConflictException` (409) ou `ValorInvalidoException` (400).
+5. Erros: lance `NotFoundException` (404), `ConflictException` (409) ou `ValorInvalidoException` (400; passe o nome do campo para o formulário destacá-lo).
 6. Escreva `<Modulo>ApiTest` copiando `VeiculoApiTest` e rode `./mvnw verify`.
 
 ## Git
