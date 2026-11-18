@@ -1,0 +1,37 @@
+# Hospedagem da API no Render (Blueprint): API Spring Boot (Docker) + PostgreSQL, plano gratuito.
+# O front fica na Vercel e aponta para esta API via VITE_API_URL.
+services:
+  - type: web
+    name: translog-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: virginia
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod,demo # demo = dados de exemplo + admin@translog.com para a apresentação
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://translogbr.vercel.app
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=75 -XX:+UseSerialGC
+      - key: DB_HOST
+        fromDatabase: { name: translog-db, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: translog-db, property: port }
+      - key: DB_NAME
+        fromDatabase: { name: translog-db, property: database }
+      - key: DB_USER
+        fromDatabase: { name: translog-db, property: user }
+      - key: DB_PASSWORD
+        fromDatabase: { name: translog-db, property: password }
+
+databases:
+  - name: translog-db
+    plan: free
+    region: virginia
+    databaseName: translog
+    user: translog

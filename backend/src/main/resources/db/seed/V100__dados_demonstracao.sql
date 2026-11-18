@@ -1,4 +1,4 @@
--- Dados de demonstração (SOMENTE perfil dev). O usuário admin é criado por DevDataSeeder (BCrypt).
+-- Dados de demonstração (perfis dev e demo). O usuário admin é criado por DevDataSeeder (BCrypt).
 INSERT INTO veiculos (placa, marca, modelo, ano, status) VALUES
  ('ABC1D23','Volvo','FH 540',2021,'DISPONIVEL'),
  ('EFG4H56','Mercedes-Benz','Sprinter',2020,'EM_USO'),

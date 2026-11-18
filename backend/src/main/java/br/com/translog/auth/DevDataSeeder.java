@@ -5,9 +5,9 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-/** Cria o usuário de demonstração (admin@translog.com / admin123). SOMENTE no perfil dev. */
+/** Cria o usuário de demonstração (admin@translog.com / admin123) nos perfis dev e demo. */
 @Component
-@Profile("dev")
+@Profile({"dev", "demo"})
 public class DevDataSeeder implements CommandLineRunner {
 
     private final UsuarioRepository repo;
