@@ -1,14 +1,17 @@
-# Módulo Motorista — TODO (Guilherme Juarez)
+# Módulo Motorista
 
-A tabela `motoristas` e `motorista_categorias` já existem (migration `V1__schema_inicial.sql`) e o enum
-`StatusMotorista` está pronto. **Falta implementar**, copiando o padrão de `../veiculo/`:
+Implementado no padrão de `../veiculo/`. Tabelas `motoristas` e `motorista_categorias` vêm da migration
+`V1__schema_inicial.sql`; a `V2__motoristas_indices.sql` só acrescenta CHECKs (CPF/CNH/telefone só com
+dígitos e categoria A..E) — nenhum índice novo se justificou, e a V1 não foi alterada.
 
-- [ ] `Motorista` (entity) — categorias via `@ElementCollection` na tabela `motorista_categorias` (uma linha por categoria A..E)
-- [ ] `MotoristaRepository` (filtro `q` por nome/CNH/CPF + `status`)
-- [ ] `dto/MotoristaRequest`, `dto/MotoristaResponse`, `MotoristaMapper`
-- [ ] `MotoristaService` (CPF e CNH únicos → 409; excluir bloqueado se tiver ocorrências → 409)
-- [ ] `MotoristaController` em `/api/motoristas`
-- [ ] Testes (`MotoristaApiTest`, no estilo de `VeiculoApiTest`)
+- `Motorista` — entidade; categorias via `@ElementCollection` (EAGER) em `motorista_categorias`.
+- `MotoristaRepository` — `JpaSpecificationExecutor` + `@EntityGraph` na listagem (evita N+1);
+  `contarOcorrencias` em SQL nativo para bloquear exclusão sem acoplar o módulo de ocorrências.
+- `MotoristaMapper` — entidade <-> DTO; normaliza categorias (maiúscula, sem repetição, ordenadas).
+- `MotoristaRequest` / `MotoristaResponse` — records; validação em português vira `fieldErrors`.
+- `MotoristaService` — regras: CPF/CNH únicos (409), 404, exclusão bloqueada com ocorrências (409).
+- `MotoristaController` — `/api/motoristas`, tudo protegido por JWT.
+- `MotoristaApiTest` — CRUD, filtros, validações, conflitos, 404 e 401.
 
 ## Contrato (fixo — o front já depende dele)
 
@@ -18,8 +21,9 @@ A tabela `motoristas` e `motorista_categorias` já existem (migration `V1__schem
 | nome | string | obrigatório, máx. 120 |
 | cpf | string | 11 dígitos, **só números** (o front remove a máscara), único |
 | cnh | string | 11 dígitos, só números, única |
-| categorias | string[] | ao menos 1 de `"A".."E"` |
+| categorias | string[] | ao menos 1 de `"A".."E"`, sem repetição |
 | telefone | string | 10 a 11 dígitos, só números |
 | status | string | `"Disponível"`, `"Em viagem"` ou `"Inativo"` |
 
 Endpoints: `GET /api/motoristas?q=&status=`, `GET /{id}`, `POST` (201), `PUT /{id}`, `DELETE /{id}` (204).
+`q` casa nome, CNH ou CPF (parcial, sem diferenciar maiúscula/minúscula); a lista vem por `id` DESC.
