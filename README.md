@@ -71,7 +71,9 @@ backend/           API Spring Boot (detalhes em backend/README.md)
 ```
 
 ## Como executar
-**Back-end** (precisa do Java 21):
+Pré-requisitos: Java 21 para o back-end e Node.js 20+ para o front-end.
+
+**Back-end:**
 ```bash
 cd backend
 ./mvnw spring-boot:run     # http://localhost:8080 · Swagger em /swagger-ui.html
@@ -82,10 +84,10 @@ cd backend
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local   # e defina VITE_API_URL=http://localhost:8080/api
+cp .env.example .env.local   # configure VITE_API_URL=http://localhost:8080/api
 npm run dev                  # http://localhost:5173
 ```
-Usuário de demonstração: **admin@translog.com / admin123** (também dá para criar uma conta).
+Sem `VITE_API_URL`, o front usa o modo demo local. Usuário de demonstração: **admin@translog.com / admin123** (também dá para criar uma conta).
 
 ## Dados e persistência
 - **Com a API (`VITE_API_URL` definida):** os dados vêm do back-end. Em desenvolvimento a API usa
@@ -95,48 +97,70 @@ Usuário de demonstração: **admin@translog.com / admin123** (também dá para 
 - **Contingência (sem `VITE_API_URL`):** os dados iniciais vêm de `src/data/*.json` e as alterações
   são gravadas no `localStorage` (`translog:demo:*`). As contas do modo demo guardam só o hash da senha.
 
-## Contrato da API
-URL-base configurada em `VITE_API_URL` (lida só em `src/services/http.js`). JSON, campos em português.
-Todas as rotas exigem `Authorization: Bearer <token>`, exceto cadastro e login.
+## Contrato da API (AV2)
 
-| Método | Endpoint | Corpo | Resposta |
+A URL-base é configurada em `VITE_API_URL`; as rotas abaixo são relativas a `/api`. A API usa JSON e campos em português. As rotas `/api/**` exigem `Authorization: Bearer <token>`, exceto cadastro, login, Swagger e `/actuator/health`. Os endpoints listados foram conferidos nos controllers atuais; detalhes adicionais constam em [`backend/README.md`](backend/README.md).
+
+### Autenticação
+
+| Método | Rota | Corpo | Respostas documentadas |
 |---|---|---|---|
-| POST | `/api/auth/cadastro` | `{nome, email, senha}` | `201 {token, usuario}` · `409` e-mail já usado |
-| POST | `/api/auth/login` | `{email, senha}` | `200 {token, usuario}` · `401` credenciais inválidas |
-| GET | `/api/auth/me` | — | `200 {id, nome, email}` · `401` token inválido |
-| GET | `/api/veiculos?q=&status=` | — | `200 [veículo]` |
-| GET | `/api/veiculos/{id}` | — | `200 veículo` · `404` |
-| POST | `/api/veiculos` | `{placa, marca, modelo, ano, status}` | `201 veículo` · `400` validação · `409` placa duplicada |
-| PUT | `/api/veiculos/{id}` | igual ao POST | `200 veículo` · `400` · `404` · `409` |
-| DELETE | `/api/veiculos/{id}` | — | `204` · `409` se houver ocorrências vinculadas |
+| POST | `/api/auth/cadastro` | `{nome, email, senha}` | `201` `{token, usuario:{id,nome,email}}`; `400` validação; `409` e-mail duplicado |
+| POST | `/api/auth/login` | `{email, senha}` | `200` `{token, usuario:{id,nome,email}}`; `400` validação; `401` credenciais inválidas |
+| GET | `/api/auth/me` | — | `200` `{id, nome, email}`; `401` token inválido |
 
-Exemplo de resposta (veículo):
-```json
-{ "id": 1, "placa": "ABC1D23", "marca": "Volvo", "modelo": "FH 540", "ano": 2021, "status": "Disponível" }
-```
-Exemplo de erro (todas as rotas):
-```json
-{ "status": 400, "error": "Bad Request", "message": "Dados inválidos. Verifique os campos informados.",
-  "path": "/api/veiculos", "fieldErrors": { "placa": "Placa inválida. Use ABC1234 ou ABC1D23." } }
-```
-Sem token ou com token inválido, a API responde `401` e o front encerra a sessão e volta ao login.
-Motoristas, ocorrências e dashboard seguem o mesmo padrão; o contrato completo está em
-[`backend/README.md`](backend/README.md) e no Swagger.
+### Veículos
+
+| Método | Rota | Corpo | Respostas documentadas |
+|---|---|---|---|
+| GET | `/api/veiculos?q=&status=` | — | `200` lista |
+| GET | `/api/veiculos/{id}` | — | `200` veículo; `404` não encontrado |
+| POST | `/api/veiculos` | `{placa, marca, modelo, ano, status}` | `201` criado; `400` validação; `409` placa duplicada |
+| PUT | `/api/veiculos/{id}` | Os mesmos campos do POST | `200` atualizado; `400` validação; `404` não encontrado; `409` conflito |
+| DELETE | `/api/veiculos/{id}` | — | `204` removido; `409` se houver ocorrências vinculadas |
+
+Placas aceitas: `ABC1234` ou `ABC1D23`; hífen e letras minúsculas são normalizados. O ano permitido vai de 1950 até o ano atual + 1. Status: `Disponível`, `Em uso` ou `Manutenção`. A busca considera placa, marca e modelo; ordenação por ID decrescente.
+
+### Ocorrências
+
+| Método | Rota | Corpo | Respostas documentadas |
+|---|---|---|---|
+| GET | `/api/ocorrencias?q=&status=&tipo=&de=&ate=` | — | `200` lista filtrada |
+| GET | `/api/ocorrencias/{id}` | — | `200` ocorrência; `404` não encontrada |
+| POST | `/api/ocorrencias` | `{titulo, tipo, descricao, data, status, veiculoId, motoristaId}`; motorista pode ser omitido ou `null` | `201` criada; `400` validação ou vínculo inválido |
+| PUT | `/api/ocorrencias/{id}` | Os mesmos campos do POST | `200` atualizada; `400` validação ou vínculo inválido; `404` não encontrada |
+| DELETE | `/api/ocorrencias/{id}` | — | `204` removida; `404` não encontrada |
+
+Tipos: `Manutenção`, `Acidente`, `Atraso` e `Outro`. Status: `Aberta`, `Em análise` e `Resolvida`. Busca parcial, sem distinção entre maiúsculas e minúsculas, por título/descrição. Filtros combináveis por busca, status, tipo e período; datas inclusivas; ordenação por data e ID decrescentes. Título (até 160 caracteres), descrição (até 2000), tipo, data, status e veículo são obrigatórios. Data futura e vínculo para veículo ou motorista inexistente são inválidos.
+
+### Dashboard
+
+| Método | Rota | Corpo | Respostas documentadas |
+|---|---|---|---|
+| GET | `/api/dashboard/resumo` | — | `200` `{totais, veiculosPorStatus, motoristasPorStatus, ocorrenciasPorStatus, ocorrenciasPorTipo}`; `401` não autenticado |
+
+Em `totais`, o DTO atual contém `veiculos`, `motoristas`, `ocorrencias`, `ocorrenciasAbertas` e `veiculosDisponiveis`. O endpoint está presente em `DashboardController`; o README do backend ainda o identifica como “a implementar”, divergência que deve ser reconciliada pelos responsáveis da API.
+
+### Motoristas e Histórico
+
+O README do backend marca Motoristas como “a implementar” e não há controller de motorista no código atual. Os endpoints de motorista oferecidos pelo front não são confirmados como API e não são listados como contrato. O Histórico é uma tela front-end sobre os dados de ocorrências; não há endpoint específico de Histórico nos controllers examinados.
+
+Erros de validação usam `{timestamp, status, error, message, path, fieldErrors}`; `fieldErrors` aparece em erros de validação. Sem token ou com token inválido, a API responde `401` e o front encerra a sessão e volta ao login.
 
 ## Evolução da AV1 para a AV2
-| Aspecto | Situação na AV1 | Evolução na AV2 | Evidência |
-|---|---|---|---|
-| Dados | JSON local + `localStorage` | API REST Spring Boot | `src/services/remote.js`, `backend/` |
-| Autenticação | não implementada (mock local) | login JWT, rota protegida, sessão restaurada no F5, logout | `context/AuthContext.jsx`, `components/ProtectedRoute.jsx` |
-| Estados da interface | lista e vazio | carregamento, sucesso, vazio e erro com tentar de novo | `components/Loading.jsx`, `context/ToastContext.jsx` |
-| Erros | só validação local | erros da API exibidos, inclusive por campo; 401 encerra a sessão | `services/http.js`, `services/errors.js` |
-| Organização | páginas e componentes | páginas, serviços, contextos e estilos separados | `frontend/src/` |
-| Interface | layout inicial | novo layout, gráficos no dashboard, histórico por mês | `src/styles/`, `pages/` |
+| AV1 (antes) | AV2 (agora) |
+|---|---|
+| Dados em JSON local + `localStorage` | API Spring Boot; H2 em desenvolvimento e PostgreSQL em produção |
+| Login simulado no `localStorage` | Login com JWT e rotas protegidas |
+| Validação somente no front-end | Validação no front-end e no back-end, com mensagens em português |
+| Sem persistência no servidor | Persistência gerenciada por Flyway; PostgreSQL no perfil de produção |
+| Sem testes de API | Testes de API com JUnit, MockMvc e H2 por `./mvnw verify` |
 
 ## Limitações e contingência
-- **Módulos em andamento:** na API, autenticação, veículos e ocorrências estão prontos; motoristas e
-  dashboard estão sendo implementados pela equipe. Enquanto um módulo não existe, a página mostra o
-  erro com **Tentar de novo** e o restante do sistema continua funcionando.
+- **Motoristas:** o front contém as telas, mas o README do backend marca o módulo como “a implementar” e o controller não existe no código consultado. Disponibilidade da API: A confirmar.
+- **Dashboard:** `GET /api/dashboard/resumo` existe no controller, embora o README do backend ainda o marque como “a implementar”; alinhar a documentação do backend.
+- **Falhas por recurso:** a interface mostra erro com **Tentar de novo** e outros módulos continuam funcionando.
+- **Histórico:** filtros e exportação CSV são da interface; endpoint próprio não está documentado.
 - **Servidor fora do ar:** o login mostra "Não foi possível conectar ao servidor"; quem já estava logado
   continua na sessão e vê o erro na página, nunca uma tela em branco.
 - **Contingência para a apresentação:** sem `VITE_API_URL`, o front roda com os dados locais de
