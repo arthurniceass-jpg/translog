@@ -1,5 +1,6 @@
 package br.com.translog.ocorrencia;
 
+import br.com.translog.common.BuscaTexto;
 import br.com.translog.common.NotFoundException;
 import br.com.translog.common.ValorInvalidoException;
 import br.com.translog.ocorrencia.dto.OcorrenciaRequest;
@@ -12,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Locale;
 
 @Service
 public class OcorrenciaService {
@@ -35,11 +35,10 @@ public class OcorrenciaService {
 
         Specification<Ocorrencia> spec = Specification.unrestricted();
         if (q != null && !q.isBlank()) {
-            String termo = "%" + q.trim().toLowerCase(Locale.ROOT)
-                    .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+            String termo = BuscaTexto.padraoContem(q);
             spec = spec.and((root, query, cb) -> cb.or(
-                    cb.like(cb.lower(root.get("titulo")), termo, '\\'),
-                    cb.like(cb.lower(root.get("descricao")), termo, '\\')));
+                    cb.like(cb.lower(root.get("titulo")), termo, BuscaTexto.ESCAPE),
+                    cb.like(cb.lower(root.get("descricao")), termo, BuscaTexto.ESCAPE)));
         }
         if (status != null && !status.isBlank()) {
             StatusOcorrencia statusFiltro = StatusOcorrencia.de(status);

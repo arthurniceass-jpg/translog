@@ -71,7 +71,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiError> conflito(ConflictException ex, HttpServletRequest req) {
-        return erro(HttpStatus.CONFLICT, ex.getMessage(), req, null);
+        Map<String, String> campos = ex.getCampo() == null ? null : Map.of(ex.getCampo(), ex.getMessage());
+        return erro(HttpStatus.CONFLICT, ex.getMessage(), req, campos);
     }
 
     /** Rede de segurança: unicidade/FK violada no banco que escapou das checagens do service. */

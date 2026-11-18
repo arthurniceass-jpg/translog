@@ -142,6 +142,18 @@ class MotoristaApiTest extends ApiTestBase {
     }
 
     @Test
+    void buscaTrataCuringasSqlComoTextoLiteral() throws Exception {
+        criar(jsonValido("Disponível"));
+
+        mvc.perform(comToken(get("/api/motoristas")).param("q", "%"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+        mvc.perform(comToken(get("/api/motoristas")).param("q", "_"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
     void listaFiltraPorStatus() throws Exception {
         String nome = nomeUnico();
         criar(motoristaJson(nome, onzeDigitos(), onzeDigitos(), telefone(), "Em viagem", "[\"D\",\"E\"]"));
@@ -204,7 +216,8 @@ class MotoristaApiTest extends ApiTestBase {
         mvc.perform(comToken(post("/api/motoristas"))
                         .content(motoristaJson(nomeUnico(), cpf, onzeDigitos(), telefone(), "Disponível", "[\"A\"]")))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Já existe um motorista com este CPF."));
+                .andExpect(jsonPath("$.message").value("Já existe um motorista com este CPF."))
+                .andExpect(jsonPath("$.fieldErrors.cpf").value("Já existe um motorista com este CPF."));
     }
 
     @Test
@@ -215,7 +228,8 @@ class MotoristaApiTest extends ApiTestBase {
         mvc.perform(comToken(post("/api/motoristas"))
                         .content(motoristaJson(nomeUnico(), onzeDigitos(), cnh, telefone(), "Disponível", "[\"A\"]")))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Já existe um motorista com esta CNH."));
+                .andExpect(jsonPath("$.message").value("Já existe um motorista com esta CNH."))
+                .andExpect(jsonPath("$.fieldErrors.cnh").value("Já existe um motorista com esta CNH."));
     }
 
     @Test
@@ -227,7 +241,8 @@ class MotoristaApiTest extends ApiTestBase {
         mvc.perform(comToken(put("/api/motoristas/" + id))
                         .content(motoristaJson(nomeUnico(), cpf, onzeDigitos(), telefone(), "Disponível", "[\"A\"]")))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Já existe um motorista com este CPF."));
+                .andExpect(jsonPath("$.message").value("Já existe um motorista com este CPF."))
+                .andExpect(jsonPath("$.fieldErrors.cpf").value("Já existe um motorista com este CPF."));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package br.com.translog.motorista;
 
+import br.com.translog.common.BuscaTexto;
 import br.com.translog.common.ConflictException;
 import br.com.translog.common.NotFoundException;
 import br.com.translog.motorista.dto.MotoristaRequest;
@@ -10,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Regras de negócio de motoristas. O controller só recebe/devolve HTTP; o acesso a dados fica no repository.
@@ -31,11 +31,11 @@ public class MotoristaService {
         Specification<Motorista> spec = Specification.unrestricted();
 
         if (q != null && !q.isBlank()) {
-            String termo = "%" + q.trim().toLowerCase(Locale.ROOT) + "%";
+            String termo = BuscaTexto.padraoContem(q);
             spec = spec.and((root, query, cb) -> cb.or(
-                    cb.like(cb.lower(root.get("nome")), termo),
-                    cb.like(cb.lower(root.get("cnh")), termo),
-                    cb.like(cb.lower(root.get("cpf")), termo)));
+                    cb.like(cb.lower(root.get("nome")), termo, BuscaTexto.ESCAPE),
+                    cb.like(cb.lower(root.get("cnh")), termo, BuscaTexto.ESCAPE),
+                    cb.like(cb.lower(root.get("cpf")), termo, BuscaTexto.ESCAPE)));
         }
         if (status != null && !status.isBlank()) {
             StatusMotorista s = StatusMotorista.de(status); // 400 se o status não existir
@@ -82,12 +82,12 @@ public class MotoristaService {
 
         boolean cpfEmUso = id == null ? repo.existsByCpf(cpf) : repo.existsByCpfAndIdNot(cpf, id);
         if (cpfEmUso) {
-            throw new ConflictException("Já existe um motorista com este CPF.");
+            throw new ConflictException("cpf", "Já existe um motorista com este CPF.");
         }
 
         boolean cnhEmUso = id == null ? repo.existsByCnh(cnh) : repo.existsByCnhAndIdNot(cnh, id);
         if (cnhEmUso) {
-            throw new ConflictException("Já existe um motorista com esta CNH.");
+            throw new ConflictException("cnh", "Já existe um motorista com esta CNH.");
         }
     }
 

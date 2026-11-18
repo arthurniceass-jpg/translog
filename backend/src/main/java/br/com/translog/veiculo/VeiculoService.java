@@ -1,5 +1,6 @@
 package br.com.translog.veiculo;
 
+import br.com.translog.common.BuscaTexto;
 import br.com.translog.common.ConflictException;
 import br.com.translog.common.NotFoundException;
 import br.com.translog.veiculo.dto.VeiculoRequest;
@@ -10,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Regras de negócio de veículos. O controller só recebe/devolve HTTP; o acesso a dados fica no repository.
@@ -31,11 +31,11 @@ public class VeiculoService {
         Specification<Veiculo> spec = Specification.unrestricted();
 
         if (q != null && !q.isBlank()) {
-            String termo = "%" + q.trim().toLowerCase(Locale.ROOT) + "%";
+            String termo = BuscaTexto.padraoContem(q);
             spec = spec.and((root, query, cb) -> cb.or(
-                    cb.like(cb.lower(root.get("placa")), termo),
-                    cb.like(cb.lower(root.get("marca")), termo),
-                    cb.like(cb.lower(root.get("modelo")), termo)));
+                    cb.like(cb.lower(root.get("placa")), termo, BuscaTexto.ESCAPE),
+                    cb.like(cb.lower(root.get("marca")), termo, BuscaTexto.ESCAPE),
+                    cb.like(cb.lower(root.get("modelo")), termo, BuscaTexto.ESCAPE)));
         }
         if (status != null && !status.isBlank()) {
             StatusVeiculo s = StatusVeiculo.de(status); // 400 se o status não existir
@@ -54,7 +54,7 @@ public class VeiculoService {
     public VeiculoResponse criar(VeiculoRequest req) {
         String placa = VeiculoMapper.normalizarPlaca(req.placa());
         if (repo.existsByPlaca(placa)) {
-            throw new ConflictException("Já existe um veículo com a placa " + placa + ".");
+            throw new ConflictException("placa", "Já existe um veículo com a placa " + placa + ".");
         }
         return mapper.paraResposta(repo.save(mapper.paraEntidade(req)));
     }
@@ -64,7 +64,7 @@ public class VeiculoService {
         Veiculo v = obter(id);
         String placa = VeiculoMapper.normalizarPlaca(req.placa());
         if (repo.existsByPlacaAndIdNot(placa, id)) {
-            throw new ConflictException("Já existe um veículo com a placa " + placa + ".");
+            throw new ConflictException("placa", "Já existe um veículo com a placa " + placa + ".");
         }
         mapper.copiar(req, v);
         return mapper.paraResposta(repo.save(v));
