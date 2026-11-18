@@ -53,7 +53,7 @@ Base `/api`, JSON, campos em pt-BR, ids numéricos. Toda rota exige `Authorizati
 - `q` busca em placa/marca/modelo; lista ordenada por `id` decrescente
 - excluir veículo com ocorrências → `409`
 
-### Motoristas (a implementar — ver `src/main/java/br/com/translog/motorista/README.md`)
+### Motoristas (detalhes em `src/main/java/br/com/translog/motorista/README.md`)
 `id, nome, cpf (11 dígitos), cnh (11 dígitos), categorias ["A".."E"], telefone (10–11 dígitos), status "Disponível" | "Em viagem" | "Inativo"`.
 Categorias ficam na tabela auxiliar `motorista_categorias` (uma linha por categoria).
 
@@ -70,7 +70,7 @@ Categorias ficam na tabela auxiliar `motorista_categorias` (uma linha por catego
 - `de > ate`, data mal formatada ou enum inválido → `400`.
 - Funciona sem o módulo de motoristas: valida o ID diretamente na tabela já criada pela V1.
 
-### Dashboard (a implementar)
+### Dashboard (detalhes em `src/main/java/br/com/translog/dashboard/README.md`)
 `GET /api/dashboard/resumo` → contagens por status/tipo de veículos, motoristas e ocorrências.
 
 ### Formato de erro (todos os erros)

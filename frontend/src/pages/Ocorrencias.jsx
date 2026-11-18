@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useData } from "../context/DataContext";
 import { useToast } from "../context/ToastContext";
@@ -9,8 +9,12 @@ import { Badge, statusVariant } from "../components/Badge";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { Icon } from "../components/Icons";
 import { TableSkeleton, ErroCarga } from "../components/Loading";
+import { ThOrdenavel } from "../components/ThOrdenavel";
+import { useOrdenacao } from "../hooks/useOrdenacao";
 import { STATUS_OCORRENCIA, TIPOS_OCORRENCIA, ICONE_TIPO } from "../data/constants";
 import { dataBR } from "../lib/format";
+
+const ORDEM_INICIAL = { coluna: "data", direcao: "desc" };
 
 export function Ocorrencias() {
   const { ocorrencias, veiculos, removeOcorrencia, carregando, erroDe, recarregar } = useData();
@@ -27,12 +31,20 @@ export function Ocorrencias() {
   const placaDe = (id) => veiculos.find((v) => String(v.id) === String(id))?.placa || "—";
 
   const termo = busca.trim().toLowerCase();
-  const lista = ocorrencias
-    .filter((o) => {
-      const casaBusca = !termo || o.titulo.toLowerCase().includes(termo) || o.descricao.toLowerCase().includes(termo);
-      return casaBusca && (!filtroStatus || o.status === filtroStatus) && (!filtroTipo || o.tipo === filtroTipo);
-    })
-    .sort((a, b) => b.data.localeCompare(a.data));
+  const filtrada = ocorrencias.filter((o) => {
+    const casaBusca = !termo || o.titulo.toLowerCase().includes(termo) || o.descricao.toLowerCase().includes(termo);
+    return casaBusca && (!filtroStatus || o.status === filtroStatus) && (!filtroTipo || o.tipo === filtroTipo);
+  });
+  const colunas = useMemo(() => {
+    const placas = new Map(veiculos.map((v) => [String(v.id), v.placa]));
+    return {
+      titulo: (o) => o.titulo,
+      veiculo: (o) => placas.get(String(o.veiculoId)) || "",
+      data: (o) => o.data,
+      status: (o) => o.status,
+    };
+  }, [veiculos]);
+  const { ordenada: lista, ordem, ordenarPor } = useOrdenacao(filtrada, colunas, ORDEM_INICIAL);
 
   async function confirmarExclusao() {
     setExcluindo(true);
@@ -86,10 +98,10 @@ export function Ocorrencias() {
               <table className="table stack">
                 <thead>
                   <tr>
-                    <th>Ocorrência</th>
-                    <th>Veículo</th>
-                    <th>Data</th>
-                    <th>Status</th>
+                    <ThOrdenavel coluna="titulo" ordem={ordem} onOrdenar={ordenarPor}>Ocorrência</ThOrdenavel>
+                    <ThOrdenavel coluna="veiculo" ordem={ordem} onOrdenar={ordenarPor}>Veículo</ThOrdenavel>
+                    <ThOrdenavel coluna="data" ordem={ordem} onOrdenar={ordenarPor}>Data</ThOrdenavel>
+                    <ThOrdenavel coluna="status" ordem={ordem} onOrdenar={ordenarPor}>Status</ThOrdenavel>
                     <th className="text-right">Ações</th>
                   </tr>
                 </thead>

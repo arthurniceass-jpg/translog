@@ -10,8 +10,12 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { Avatar } from "../components/Avatar";
 import { Icon } from "../components/Icons";
 import { TableSkeleton, ErroCarga } from "../components/Loading";
+import { ThOrdenavel } from "../components/ThOrdenavel";
+import { useOrdenacao } from "../hooks/useOrdenacao";
 import { STATUS_MOTORISTA } from "../data/constants";
-import { mascararTelefone } from "../lib/format";
+import { baixarCSV, mascararCPF, mascararTelefone } from "../lib/format";
+
+const COLUNAS = { nome: (m) => m.nome, cnh: (m) => m.cnh, categorias: (m) => (m.categorias || []).join(""), status: (m) => m.status };
 
 export function Motoristas() {
   const { motoristas, removeMotorista, carregando, erroDe, recarregar } = useData();
@@ -25,10 +29,18 @@ export function Motoristas() {
   const [excluindo, setExcluindo] = useState(false);
 
   const termo = busca.trim().toLowerCase();
-  const lista = motoristas.filter((m) => {
+  const filtrada = motoristas.filter((m) => {
     const casaBusca = !termo || m.nome.toLowerCase().includes(termo) || m.cnh.includes(termo);
     return casaBusca && (!filtroStatus || m.status === filtroStatus);
   });
+  const { ordenada: lista, ordem, ordenarPor } = useOrdenacao(filtrada, COLUNAS);
+
+  function exportar() {
+    baixarCSV("motoristas.csv", [
+      ["Nome", "CPF", "CNH", "Categorias", "Telefone", "Status"],
+      ...lista.map((m) => [m.nome, mascararCPF(m.cpf), m.cnh, (m.categorias || []).join(" "), mascararTelefone(m.telefone), m.status]),
+    ]);
+  }
 
   async function confirmarExclusao() {
     setExcluindo(true);
@@ -46,6 +58,9 @@ export function Motoristas() {
   return (
     <>
       <PageHeader titulo="Motoristas" sub="Gerencie os condutores, suas CNHs e a disponibilidade.">
+        <button className="btn btn-outline" onClick={exportar} disabled={lista.length === 0}>
+          <Icon name="download" size={17} /> Exportar CSV
+        </button>
         <Link to="/motoristas/novo" className="btn btn-primary"><Icon name="plus" size={17} /> Novo motorista</Link>
       </PageHeader>
 
@@ -80,10 +95,10 @@ export function Motoristas() {
               <table className="table stack">
                 <thead>
                   <tr>
-                    <th>Motorista</th>
-                    <th>CNH</th>
-                    <th>Categorias</th>
-                    <th>Status</th>
+                    <ThOrdenavel coluna="nome" ordem={ordem} onOrdenar={ordenarPor}>Motorista</ThOrdenavel>
+                    <ThOrdenavel coluna="cnh" ordem={ordem} onOrdenar={ordenarPor}>CNH</ThOrdenavel>
+                    <ThOrdenavel coluna="categorias" ordem={ordem} onOrdenar={ordenarPor}>Categorias</ThOrdenavel>
+                    <ThOrdenavel coluna="status" ordem={ordem} onOrdenar={ordenarPor}>Status</ThOrdenavel>
                     <th className="text-right">Ações</th>
                   </tr>
                 </thead>
@@ -94,7 +109,7 @@ export function Motoristas() {
                         <div className="cell-main">
                           <Avatar nome={m.nome} small />
                           <div>
-                            <strong>{m.nome}</strong>
+                            <Link to={`/motoristas/${m.id}`}><strong>{m.nome}</strong></Link>
                             <small>{mascararTelefone(m.telefone)}</small>
                           </div>
                         </div>
@@ -104,6 +119,7 @@ export function Motoristas() {
                       <td data-label="Status"><Badge variant={statusVariant(m.status)}>{m.status}</Badge></td>
                       <td className="cell-actions">
                         <div className="actions">
+                          <button className="icon-btn" title="Detalhes" aria-label={`Ver ${m.nome}`} onClick={() => navigate(`/motoristas/${m.id}`)}><Icon name="eye" size={17} /></button>
                           <button className="icon-btn" title="Editar" aria-label={`Editar ${m.nome}`} onClick={() => navigate(`/motoristas/${m.id}/editar`)}><Icon name="edit" size={17} /></button>
                           <button className="icon-btn danger" title="Excluir" aria-label={`Excluir ${m.nome}`} onClick={() => setExcluir(m)}><Icon name="trash" size={17} /></button>
                         </div>

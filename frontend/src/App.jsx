@@ -4,8 +4,10 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Home } from "./pages/Home";
 import { Veiculos } from "./pages/Veiculos";
 import { VeiculoForm } from "./pages/VeiculoForm";
+import { VeiculoDetalhe } from "./pages/VeiculoDetalhe";
 import { Motoristas } from "./pages/Motoristas";
 import { MotoristaForm } from "./pages/MotoristaForm";
+import { MotoristaDetalhe } from "./pages/MotoristaDetalhe";
 import { Ocorrencias } from "./pages/Ocorrencias";
 import { OcorrenciaForm } from "./pages/OcorrenciaForm";
 import { OcorrenciaDetalhe } from "./pages/OcorrenciaDetalhe";
@@ -28,10 +30,12 @@ export default function App() {
 
           <Route path="veiculos" element={<Veiculos />} />
           <Route path="veiculos/novo" element={<VeiculoForm />} />
+          <Route path="veiculos/:id" element={<VeiculoDetalhe />} />
           <Route path="veiculos/:id/editar" element={<VeiculoForm />} />
 
           <Route path="motoristas" element={<Motoristas />} />
           <Route path="motoristas/novo" element={<MotoristaForm />} />
+          <Route path="motoristas/:id" element={<MotoristaDetalhe />} />
           <Route path="motoristas/:id/editar" element={<MotoristaForm />} />
 
           <Route path="ocorrencias" element={<Ocorrencias />} />

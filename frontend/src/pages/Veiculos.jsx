@@ -9,7 +9,12 @@ import { Badge, statusVariant } from "../components/Badge";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { Icon } from "../components/Icons";
 import { TableSkeleton, ErroCarga } from "../components/Loading";
+import { ThOrdenavel } from "../components/ThOrdenavel";
+import { useOrdenacao } from "../hooks/useOrdenacao";
 import { STATUS_VEICULO } from "../data/constants";
+import { baixarCSV } from "../lib/format";
+
+const COLUNAS = { placa: (v) => v.placa, veiculo: (v) => `${v.marca} ${v.modelo}`, ano: (v) => v.ano, status: (v) => v.status };
 
 export function Veiculos() {
   const { veiculos, removeVeiculo, carregando, erroDe, recarregar } = useData();
@@ -23,10 +28,18 @@ export function Veiculos() {
   const [excluindo, setExcluindo] = useState(false);
 
   const termo = busca.trim().toLowerCase();
-  const lista = veiculos.filter((v) => {
+  const filtrada = veiculos.filter((v) => {
     const casaBusca = !termo || [v.placa, v.marca, v.modelo].some((t) => t.toLowerCase().includes(termo));
     return casaBusca && (!filtroStatus || v.status === filtroStatus);
   });
+  const { ordenada: lista, ordem, ordenarPor } = useOrdenacao(filtrada, COLUNAS);
+
+  function exportar() {
+    baixarCSV("veiculos.csv", [
+      ["Placa", "Marca", "Modelo", "Ano", "Status"],
+      ...lista.map((v) => [v.placa, v.marca, v.modelo, v.ano, v.status]),
+    ]);
+  }
 
   async function confirmarExclusao() {
     setExcluindo(true);
@@ -44,6 +57,9 @@ export function Veiculos() {
   return (
     <>
       <PageHeader titulo="Veículos" sub="Cadastre e acompanhe os veículos da frota.">
+        <button className="btn btn-outline" onClick={exportar} disabled={lista.length === 0}>
+          <Icon name="download" size={17} /> Exportar CSV
+        </button>
         <Link to="/veiculos/novo" className="btn btn-primary"><Icon name="plus" size={17} /> Novo veículo</Link>
       </PageHeader>
 
@@ -78,17 +94,17 @@ export function Veiculos() {
               <table className="table stack">
                 <thead>
                   <tr>
-                    <th>Placa</th>
-                    <th>Veículo</th>
-                    <th>Ano</th>
-                    <th>Status</th>
+                    <ThOrdenavel coluna="placa" ordem={ordem} onOrdenar={ordenarPor}>Placa</ThOrdenavel>
+                    <ThOrdenavel coluna="veiculo" ordem={ordem} onOrdenar={ordenarPor}>Veículo</ThOrdenavel>
+                    <ThOrdenavel coluna="ano" ordem={ordem} onOrdenar={ordenarPor}>Ano</ThOrdenavel>
+                    <ThOrdenavel coluna="status" ordem={ordem} onOrdenar={ordenarPor}>Status</ThOrdenavel>
                     <th className="text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lista.map((v) => (
                     <tr key={v.id}>
-                      <td className="cell-first" data-label="Placa"><span className="plate">{v.placa}</span></td>
+                      <td className="cell-first" data-label="Placa"><Link to={`/veiculos/${v.id}`} className="plate">{v.placa}</Link></td>
                       <td data-label="Veículo">
                         <div className="cell-main"><div><strong>{v.marca} {v.modelo}</strong></div></div>
                       </td>
@@ -96,6 +112,7 @@ export function Veiculos() {
                       <td data-label="Status"><Badge variant={statusVariant(v.status)}>{v.status}</Badge></td>
                       <td className="cell-actions">
                         <div className="actions">
+                          <button className="icon-btn" title="Detalhes" aria-label={`Ver ${v.placa}`} onClick={() => navigate(`/veiculos/${v.id}`)}><Icon name="eye" size={17} /></button>
                           <button className="icon-btn" title="Editar" aria-label={`Editar ${v.placa}`} onClick={() => navigate(`/veiculos/${v.id}/editar`)}><Icon name="edit" size={17} /></button>
                           <button className="icon-btn danger" title="Excluir" aria-label={`Excluir ${v.placa}`} onClick={() => setExcluir(v)}><Icon name="trash" size={17} /></button>
                         </div>

@@ -7,6 +7,9 @@ Sistema para uma empresa de transporte controlar **veículos**, **motoristas** e
 > **AV1:** protótipo com dados locais (JSON + `localStorage`).
 > **AV2:** front-end integrado à API Spring Boot da equipe, com login JWT e rotas protegidas.
 
+**Acesse:** https://translogbr.vercel.app (front na Vercel; API Spring Boot + PostgreSQL no Render, configurada em `render.yaml`).
+Usuário de demonstração: `admin@translog.com` / `admin123`.
+
 ---
 
 ## Problema e público
@@ -30,9 +33,11 @@ Como a equipe tem 5 integrantes, o escopo inclui **2 funcionalidades verticais a
 ## Funcionalidades
 - **Login e cadastro** — formulário validado, mensagens de erro (credencial inválida, servidor fora do ar), sessão com JWT e logout.
 - **Visão geral** — finalidade do sistema, indicadores e ocorrências recentes.
-- **Veículos** — listar, cadastrar, editar, excluir, buscar (placa/marca/modelo) e filtrar por status.
-- **Motoristas** — listar, cadastrar, editar, excluir, buscar (nome/CNH) e filtrar por status.
-- **Ocorrências** — listar, cadastrar, editar, excluir, ver detalhes, buscar e filtrar por status e tipo.
+- **Veículos** — listar, cadastrar, editar, excluir, buscar (placa/marca/modelo), filtrar por status,
+  ordenar pelas colunas, exportar CSV e ver o detalhe com as ocorrências do veículo.
+- **Motoristas** — listar, cadastrar, editar, excluir, buscar (nome/CNH), filtrar por status,
+  ordenar pelas colunas, exportar CSV e ver o detalhe com as ocorrências do motorista.
+- **Ocorrências** — listar, cadastrar, editar, excluir, ver detalhes, buscar, filtrar por status e tipo e ordenar pelas colunas.
 - **Dashboard** — indicadores e gráficos por status, tipo e mês.
 - **Histórico** — ocorrências agrupadas por mês, filtros por status/tipo/período e exportação CSV.
 - **Estados da interface** — carregamento (skeleton), sucesso (aviso), lista vazia, erro com **Tentar de novo**.
@@ -42,8 +47,8 @@ Como a equipe tem 5 integrantes, o escopo inclui **2 funcionalidades verticais a
 |---|---|---|
 | `/entrar` · `/cadastro` | Login e cadastro | público |
 | `/` | Visão geral | protegida |
-| `/veiculos` · `/veiculos/novo` · `/veiculos/:id/editar` | Veículos (lista / cadastro / edição) | protegida |
-| `/motoristas` · `/motoristas/novo` · `/motoristas/:id/editar` | Motoristas | protegida |
+| `/veiculos` · `/veiculos/novo` · `/veiculos/:id` · `/veiculos/:id/editar` | Veículos (lista / cadastro / detalhe / edição) | protegida |
+| `/motoristas` · `/motoristas/novo` · `/motoristas/:id` · `/motoristas/:id/editar` | Motoristas (lista / cadastro / detalhe / edição) | protegida |
 | `/ocorrencias` · `/ocorrencias/nova` · `/ocorrencias/:id` · `/ocorrencias/:id/editar` | Ocorrências (lista / cadastro / detalhe / edição) | protegida |
 | `/dashboard` | Dashboard de indicadores | protegida |
 | `/historico` | Histórico com filtros | protegida |
@@ -139,13 +144,27 @@ Tipos: `Manutenção`, `Acidente`, `Atraso` e `Outro`. Status: `Aberta`, `Em an�
 |---|---|---|---|
 | GET | `/api/dashboard/resumo` | — | `200` `{totais, veiculosPorStatus, motoristasPorStatus, ocorrenciasPorStatus, ocorrenciasPorTipo}`; `401` não autenticado |
 
-Em `totais`, o DTO atual contém `veiculos`, `motoristas`, `ocorrencias`, `ocorrenciasAbertas` e `veiculosDisponiveis`. O endpoint está presente em `DashboardController`; o README do backend ainda o identifica como “a implementar”, divergência que deve ser reconciliada pelos responsáveis da API.
+Em `totais`: `veiculos`, `motoristas`, `ocorrencias`, `ocorrenciasAbertas` e `veiculosDisponiveis`. Os mapas trazem todas as opções de cada enum, inclusive com zero.
 
-### Motoristas e Histórico
+### Motoristas
 
-O README do backend marca Motoristas como “a implementar” e não há controller de motorista no código atual. Os endpoints de motorista oferecidos pelo front não são confirmados como API e não são listados como contrato. O Histórico é uma tela front-end sobre os dados de ocorrências; não há endpoint específico de Histórico nos controllers examinados.
+| Método | Rota | Corpo | Respostas documentadas |
+|---|---|---|---|
+| GET | `/api/motoristas?q=&status=` | — | `200` lista |
+| GET | `/api/motoristas/{id}` | — | `200` motorista; `404` não encontrado |
+| POST | `/api/motoristas` | `{nome, cpf, cnh, categorias, telefone, status}` | `201` criado; `400` validação; `409` CPF ou CNH duplicado |
+| PUT | `/api/motoristas/{id}` | Os mesmos campos do POST | `200` atualizado; `400` validação; `404` não encontrado; `409` conflito |
+| DELETE | `/api/motoristas/{id}` | — | `204` removido; `409` se houver ocorrências vinculadas |
 
-Erros de validação usam `{timestamp, status, error, message, path, fieldErrors}`; `fieldErrors` aparece em erros de validação. Sem token ou com token inválido, a API responde `401` e o front encerra a sessão e volta ao login.
+CPF e CNH com 11 dígitos e telefone com 10 ou 11 dígitos, todos sem máscara. Categorias: lista com
+`A` a `E` (pelo menos uma). Status: `Disponível`, `Em viagem` ou `Inativo`. A busca considera nome, CPF e CNH.
+
+### Histórico
+
+O Histórico é uma tela do front sobre `GET /api/ocorrencias` (filtros por status, tipo e período e
+exportação CSV); não precisa de endpoint próprio.
+
+Todo erro usa `{timestamp, status, error, message, path, fieldErrors}`; `fieldErrors` aparece quando o problema é de um campo (validação, vínculo inexistente, placa/CPF/CNH duplicados), e o formulário destaca esse campo. Sem token ou com token inválido, a API responde `401` e o front encerra a sessão e volta ao login.
 
 ## Evolução da AV1 para a AV2
 | AV1 (antes) | AV2 (agora) |
@@ -157,10 +176,9 @@ Erros de validação usam `{timestamp, status, error, message, path, fieldErrors
 | Sem testes de API | Testes de API com JUnit, MockMvc e H2 por `./mvnw verify` |
 
 ## Limitações e contingência
-- **Motoristas:** o front contém as telas, mas o README do backend marca o módulo como “a implementar” e o controller não existe no código consultado. Disponibilidade da API: A confirmar.
-- **Dashboard:** `GET /api/dashboard/resumo` existe no controller, embora o README do backend ainda o marque como “a implementar”; alinhar a documentação do backend.
+- **Hospedagem gratuita:** a API publicada roda no plano gratuito do Render, que "dorme" após 15 minutos
+  sem uso; a primeira requisição depois disso leva cerca de 1 minuto.
 - **Falhas por recurso:** a interface mostra erro com **Tentar de novo** e outros módulos continuam funcionando.
-- **Histórico:** filtros e exportação CSV são da interface; endpoint próprio não está documentado.
 - **Servidor fora do ar:** o login mostra "Não foi possível conectar ao servidor"; quem já estava logado
   continua na sessão e vê o erro na página, nunca uma tela em branco.
 - **Contingência para a apresentação:** sem `VITE_API_URL`, o front roda com os dados locais de

@@ -158,3 +158,12 @@
 .toast-danger svg:first-child { color: #fca5a5; }
 .toast-x { display: grid; place-items: center; border: 0; background: none; color: var(--faint); }
 .toast-x:hover { color: #fff; }
+
+/* Cabeçalho ordenável (ThOrdenavel) */
+.th-sort { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0; border: 0; background: none; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer; }
+.th-sort:hover, .th-sort.on { color: var(--ink); }
+.th-sort:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+.th-seta { font-size: 0.65rem; opacity: 0.45; }
+.th-sort.on .th-seta { opacity: 1; color: var(--primary); }
+a.plate { text-decoration: none; }
+a.plate:hover { border-color: var(--primary-line); color: var(--primary); }
