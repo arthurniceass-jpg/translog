@@ -1,26 +1,31 @@
-import { useNavigate, useParams } from "react-router-dom";
-import { useData } from "../context/DataContext";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useData } from "../context/data";
 import { PageHeader } from "../components/PageHeader";
-import { Badge, statusVariant } from "../components/Badge";
+import { Badge } from "../components/Badge";
+import { statusVariant } from "../components/badgeVariants";
 import { Avatar } from "../components/Avatar";
 import { Icon } from "../components/Icons";
-import { TableSkeleton } from "../components/Loading";
+import { ErroCarga, TableSkeleton } from "../components/Loading";
 import { OcorrenciasVinculadas } from "../components/OcorrenciasVinculadas";
 import { mascararCPF, mascararTelefone } from "../lib/format";
 
 export function MotoristaDetalhe() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getMotorista, ocorrencias, carregando } = useData();
+  const { state } = useLocation();
+  const origem = state?.origem || "/motoristas";
+  const { getMotorista, ocorrencias, carregando, falhas, recarregar } = useData();
 
   if (carregando) return <div className="card"><TableSkeleton linhas={5} /></div>;
+
+  if (falhas.includes("motoristas")) return <ErroCarga mensagem="Não foi possível carregar o motorista." onTentar={recarregar} />;
 
   const m = getMotorista(id);
   if (!m) {
     return (
       <div className="card card-pad">
         <p>Motorista não encontrado.</p>
-        <button className="btn btn-outline mt" onClick={() => navigate("/motoristas")}>Voltar</button>
+        <button className="btn btn-outline mt" onClick={() => navigate(origem)}>Voltar</button>
       </div>
     );
   }
@@ -30,7 +35,7 @@ export function MotoristaDetalhe() {
 
   return (
     <>
-      <PageHeader titulo={m.nome} sub={`CNH ${m.cnh} · categoria ${(m.categorias || []).join(", ") || "—"}`} voltar={{ to: "/motoristas", label: "Motoristas" }}>
+      <PageHeader titulo={m.nome} sub={`CNH ${m.cnh} · categoria ${(m.categorias || []).join(", ") || "—"}`} voltar={{ to: origem, label: "Motoristas" }}>
         <button className="btn btn-outline" onClick={() => navigate(`/motoristas/${m.id}/editar`)}>
           <Icon name="edit" size={17} /> Editar
         </button>

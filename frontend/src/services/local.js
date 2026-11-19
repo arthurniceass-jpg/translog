@@ -2,6 +2,9 @@ import { ApiError } from "./errors";
 import { session } from "./session";
 import veiculosSeed from "../data/veiculos.json";
 import motoristasSeed from "../data/motoristas.json";
+import { apagarAnexo, armazenarAnexo, baixarAnexo, listarAnexos } from "./anexosDemo";
+import { horarioComparavel } from "../lib/operacao";
+import { operacaoDemo } from "../data/operacaoDemo";
 import ocorrenciasSeed from "../data/ocorrencias.json";
 
 /**
@@ -14,7 +17,8 @@ const num = (id) => Number(String(id).replace(/\D/g, ""));
 const atraso = (valor) => new Promise((ok) => setTimeout(() => ok(valor), 120));
 
 const SEEDS = {
-  veiculos: () => veiculosSeed.map((v) => ({ ...v, id: num(v.id) })),
+  ...operacaoDemo,
+  veiculos: () => veiculosSeed.map((v, i) => ({ ...v, id: num(v.id), quilometragem: 87500 + i * 3000 })),
   motoristas: () =>
     motoristasSeed.map((m) => ({
       ...m,
@@ -80,6 +84,57 @@ function validarUnicos(recurso, lista, dados, idAtual) {
   }
 }
 
+function validarOperacao(recurso, dados, id) {
+  if (dados.veiculoId && !lerRecurso("veiculos").some((v) => v.id === dados.veiculoId)) {
+    throw new ApiError("Veículo não encontrado.", { status: 400, fieldErrors: { veiculoId: "Veículo não encontrado." } });
+  }
+  if (dados.motoristaId && !lerRecurso("motoristas").some((m) => m.id === dados.motoristaId)) {
+    throw new ApiError("Motorista não encontrado.", { status: 400, fieldErrors: { motoristaId: "Motorista não encontrado." } });
+  }
+  if (recurso === "documentos" && lerRecurso(recurso).some((d) => d.id !== id
+      && ((dados.veiculoId && d.veiculoId === dados.veiculoId) || (dados.motoristaId && d.motoristaId === dados.motoristaId)))) {
+    throw new ApiError("Já existe um documento para este cadastro.", { status: 409 });
+  }
+  if (recurso === "viagens" && dados.status !== "CANCELADA") {
+    const conflitos = lerRecurso(recurso).filter((v) => v.id !== id && v.status !== "CANCELADA"
+      && horarioComparavel(v.partida) < horarioComparavel(dados.chegadaPrevista)
+      && horarioComparavel(v.chegadaPrevista) > horarioComparavel(dados.partida));
+    const campo = ["veiculoId", "motoristaId"].find((c) => conflitos.some((v) => v[c] === dados[c]));
+    if (campo) {
+      const mensagem = campo === "veiculoId" ? "O veículo já está reservado nesse período." : "O motorista já está reservado nesse período.";
+      throw new ApiError(mensagem, { status: 409, fieldErrors: { [campo]: mensagem } });
+    }
+  }
+}
+
+function dadosAcompanhamento(id) {
+  const ocorrencia = lerRecurso("ocorrencias").find((o) => o.id === id);
+  if (!ocorrencia) throw new ApiError("Ocorrência não encontrada.", { status: 404 });
+  return lerRecurso("acompanhamentos").find((a) => a.ocorrenciaId === id)
+    || { ocorrenciaId: id, prioridade: "NORMAL" };
+}
+
+function registrarSituacao(ocorrenciaId, anterior, novoStatus) {
+  if (anterior === novoStatus) return;
+  const registros = lerRecurso("situacoes");
+  const id = (registros.at(-1)?.id || 0) + 1;
+  gravar(chaveDe("situacoes"), [...registros, {
+    id, ocorrenciaId, anterior, novoStatus,
+    autor: session.getUser()?.nome, registradoEm: new Date().toISOString(),
+  }]);
+}
+
+function resolucoesDemo() {
+  const registros = lerRecurso("situacoes");
+  return lerRecurso("ocorrencias").filter((o) => o.status === "Resolvida").flatMap((o) => {
+    const eventos = registros.filter((r) => r.ocorrenciaId === o.id);
+    const inicio = eventos.find((r) => r.anterior === null && r.novoStatus !== "Resolvida");
+    const fim = eventos.findLast((r) => r.novoStatus === "Resolvida");
+    if (!inicio || !fim) return [];
+    return [{ ocorrenciaId: o.id, resolvidaEm: fim.registradoEm, segundos: Math.floor((Date.parse(fim.registradoEm) - Date.parse(inicio.registradoEm)) / 1000) }];
+  });
+}
+
 export const local = {
   modo: "demo",
 
@@ -111,7 +166,33 @@ export const local = {
     sair: () => session.clear(),
   },
 
+  acompanhamento: {
+    async detalhe(id) {
+      id = Number(id);
+      return {
+        dados: dadosAcompanhamento(id),
+        historico: lerRecurso("situacoes").filter((s) => s.ocorrenciaId === id).reverse(),
+        anexos: await listarAnexos(id),
+      };
+    },
+    async atualizar(id, dados) {
+      id = Number(id);
+      dadosAcompanhamento(id);
+      const registro = { ...dados, ocorrenciaId: id };
+      gravar(chaveDe("acompanhamentos"), [...lerRecurso("acompanhamentos").filter((a) => a.ocorrenciaId !== id), registro]);
+      return atraso(registro);
+    },
+    async anexar(id, arquivo) {
+      dadosAcompanhamento(Number(id));
+      return armazenarAnexo(Number(id), arquivo);
+    },
+    baixar: (id, anexoId) => baixarAnexo(Number(id), anexoId),
+    excluir: (id, anexoId) => apagarAnexo(Number(id), anexoId),
+  },
+
   async listar(recurso) {
+    if (recurso === "responsaveis") return atraso(contas().map(({ id, nome }) => ({ id, nome })));
+    if (recurso === "resolucoes") return atraso(resolucoesDemo());
     return atraso([...lerRecurso(recurso)].sort((a, b) => b.id - a.id));
   },
 
@@ -119,8 +200,10 @@ export const local = {
     const lista = lerRecurso(recurso);
     const limpo = recurso === "veiculos" ? { ...dados, placa: String(dados.placa).toUpperCase() } : dados;
     validarUnicos(recurso, lista, limpo, null);
+    validarOperacao(recurso, limpo, null);
     const novo = { ...limpo, id: Math.max(0, ...lista.map((i) => i.id)) + 1 };
     gravar(chaveDe(recurso), [...lista, novo]);
+    if (recurso === "ocorrencias") registrarSituacao(novo.id, null, novo.status);
     return atraso(novo);
   },
 
@@ -130,8 +213,11 @@ export const local = {
     if (!alvo) throw new ApiError("Registro não encontrado.", { status: 404 });
     const limpo = recurso === "veiculos" ? { ...dados, placa: String(dados.placa).toUpperCase() } : dados;
     validarUnicos(recurso, lista, limpo, alvo.id);
+    validarOperacao(recurso, limpo, alvo.id);
+    if (recurso === "veiculos" && limpo.quilometragem == null) delete limpo.quilometragem;
     const atualizado = { ...alvo, ...limpo, id: alvo.id };
     gravar(chaveDe(recurso), lista.map((i) => (i.id === alvo.id ? atualizado : i)));
+    if (recurso === "ocorrencias") registrarSituacao(alvo.id, alvo.status, atualizado.status);
     return atraso(atualizado);
   },
 
@@ -144,6 +230,18 @@ export const local = {
       throw new ApiError("Este veículo possui ocorrências vinculadas e não pode ser excluído.", { status: 409 });
     if (recurso === "motoristas" && ocs.some((o) => o.motoristaId === alvo.id))
       throw new ApiError("Este motorista possui ocorrências vinculadas e não pode ser excluído.", { status: 409 });
+    const referencias = recurso === "veiculos" ? ["viagens", "manutencoes", "abastecimentos", "documentos"]
+      : recurso === "motoristas" ? ["viagens", "documentos"] : [];
+    const campo = recurso === "veiculos" ? "veiculoId" : "motoristaId";
+    if (referencias.some((r) => lerRecurso(r).some((item) => item[campo] === alvo.id))) {
+      throw new ApiError("O cadastro possui registros operacionais vinculados.", { status: 409 });
+    }
+    if (recurso === "ocorrencias") {
+      for (const anexo of await listarAnexos(alvo.id)) await apagarAnexo(alvo.id, anexo.id);
+      for (const r of ["acompanhamentos", "situacoes"]) {
+        gravar(chaveDe(r), lerRecurso(r).filter((a) => a.ocorrenciaId !== alvo.id));
+      }
+    }
     gravar(chaveDe(recurso), lista.filter((i) => i.id !== alvo.id));
     return atraso(null);
   },

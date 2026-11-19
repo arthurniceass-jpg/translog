@@ -20,11 +20,13 @@ public class OcorrenciaService {
     private final OcorrenciaRepository repo;
     private final VeiculoRepository veiculos;
     private final OcorrenciaMapper mapper;
+    private final AcompanhamentoService acompanhamento;
 
-    public OcorrenciaService(OcorrenciaRepository repo, VeiculoRepository veiculos, OcorrenciaMapper mapper) {
+    public OcorrenciaService(OcorrenciaRepository repo, VeiculoRepository veiculos, OcorrenciaMapper mapper, AcompanhamentoService acompanhamento) {
         this.repo = repo;
         this.veiculos = veiculos;
         this.mapper = mapper;
+        this.acompanhamento = acompanhamento;
     }
 
     @Transactional(readOnly = true)
@@ -67,15 +69,20 @@ public class OcorrenciaService {
     @Transactional
     public OcorrenciaResponse criar(OcorrenciaRequest request) {
         validarVinculos(request);
-        return mapper.paraResposta(repo.save(mapper.paraEntidade(request)));
+        Ocorrencia nova = repo.save(mapper.paraEntidade(request));
+        acompanhamento.registrarStatus(nova.getId(), null, nova.getStatus());
+        return mapper.paraResposta(nova);
     }
 
     @Transactional
     public OcorrenciaResponse atualizar(Long id, OcorrenciaRequest request) {
+        acompanhamento.bloquearOcorrencia(id);
         Ocorrencia ocorrencia = obter(id);
+        StatusOcorrencia anterior = ocorrencia.getStatus();
         validarVinculos(request);
         mapper.copiar(request, ocorrencia);
-        return mapper.paraResposta(repo.save(ocorrencia));
+        acompanhamento.registrarStatus(id, anterior, ocorrencia.getStatus());
+        return mapper.paraResposta(ocorrencia);
     }
 
     @Transactional

@@ -112,3 +112,14 @@ src/main/resources/
 ## Git
 Branch `feature/<modulo>` → commits convencionais em português (`feat: ...`, `fix: ...`) → Pull Request para `main`.
 Rode `./mvnw verify` antes de abrir o PR.
+
+## API de operação da frota
+
+A migração `V101__operacao_frota.sql` preserva cadastros existentes e roda depois dos dados opcionais de demonstração da versão 100. Ela adiciona a quilometragem opcional ao veículo. Um PUT antigo de veículo que omite esse campo preserva o valor já cadastrado.
+
+- `/api/manutencoes`, `/api/viagens`, `/api/abastecimentos` e `/api/documentos` oferecem listagem, criação, atualização e exclusão. Datas sem horário usam `YYYY-MM-DD`; horários de viagem são locais de Brasília, no formato `YYYY-MM-DDTHH:mm`. A agenda considera os intervalos previstos e libera as reservas canceladas.
+- `GET /api/acompanhamentos` lista o acompanhamento para a fila de alertas. `GET /api/responsaveis` retorna identificador e nome dos usuários. `GET /api/resolucoes` lista os tempos medidos para ocorrências atualmente resolvidas e com abertura registrada.
+- `GET/PUT /api/ocorrencias/{id}/acompanhamento` consulta ou modifica prazo, responsável e prioridade. A consulta inclui histórico e metadados dos anexos. O CRUD original de ocorrências mantém o mesmo contrato.
+- `POST /api/ocorrencias/{id}/anexos` usa multipart com a parte `arquivo`. `GET/DELETE /api/ocorrencias/{id}/anexos/{anexoId}` baixa ou exclui o anexo associado. O download exige a sessão JWT e a exclusão da ocorrência remove seus anexos e histórico.
+
+Os esquemas de requisição e resposta ficam no Swagger. Execute `./mvnw verify` em `backend/` para rodar a suíte de API, incluindo a disputa concorrente de agenda e a validação de anexos.

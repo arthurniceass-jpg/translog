@@ -192,3 +192,13 @@ o módulo de veículos, que serve de modelo para os outros). Também foi usado p
 rodar testes de ponta a ponta. Todo o código foi **revisado, testado e ajustado** pela equipe, que
 sabe explicar cada parte. Decisões de arquitetura, modelo de dados e requisitos seguem o enunciado
 da disciplina.
+
+## Rotina de operação
+
+- **Manutenções** registra revisões por data ou limite do odômetro, serviços em oficina, conclusões e custos por placa. A leitura atual do odômetro fica no cadastro do veículo.
+- **Viagens** agenda veículo e motorista no horário de Brasília. A agenda sinaliza atrasos e impede reservas simultâneas do mesmo recurso. Na conclusão, informe a chegada real e os quilômetros percorridos.
+- **Alertas** reúne viagens atrasadas, ocorrências urgentes, sem responsável ou vencidas, revisões a até 7 dias ou 1.000 km do limite e documentos a até 30 dias do vencimento. Licenciamento e CNH ficam em **Gerenciar documentos**.
+- **Acompanhamento da ocorrência** registra responsável, prioridade e prazo. Permite até 10 anexos PDF, PNG ou JPEG de até 5 MB por arquivo e registra autor, data e mudança de status.
+- **Custos** soma abastecimentos e manutenções concluídas no mês por placa e os compara ao mês anterior. O denominador do custo por quilômetro é a distância das viagens concluídas no mês. O dashboard também calcula atraso pela chegada real e tempo de resolução quando a abertura e a resolução constam no histórico.
+
+O modo demonstração mantém os novos registros no navegador. Os anexos ficam no IndexedDB. Para conferir os cálculos e o build do front-end, use `npm test`, `npm run lint` e `npm run build` em `frontend/`.

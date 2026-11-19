@@ -1,8 +1,13 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Icon } from "./Icons";
 
 /** Cabeçalho padrão de página: voltar (opcional), título, subtítulo e ações à direita. */
 export function PageHeader({ titulo, sub, voltar, children }) {
+  useEffect(() => {
+    document.title = `${titulo} | TransLog`;
+  }, [titulo]);
+
   return (
     <div className="page-head">
       <div>

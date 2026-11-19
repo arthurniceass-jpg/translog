@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AuthContext } from "./auth";
 import { api } from "../services";
 import { session } from "../services/session";
 
@@ -7,8 +8,6 @@ import { session } from "../services/session";
  * Login/cadastro vão para a API (JWT). Ao abrir o app com token salvo,
  * valida a sessão em /auth/me; qualquer 401 da API derruba a sessão.
  */
-const AuthContext = createContext(null);
-
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(() => (session.getToken() ? session.getUser() : null));
   const [verificando, setVerificando] = useState(() => Boolean(session.getToken()));
@@ -46,10 +45,4 @@ export function AuthProvider({ children }) {
     [usuario, verificando, entrar, cadastrar, sair],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth deve ser usado dentro de <AuthProvider>");
-  return ctx;
 }

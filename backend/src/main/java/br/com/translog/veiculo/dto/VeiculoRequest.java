@@ -4,6 +4,7 @@ import br.com.translog.veiculo.StatusVeiculo;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 /** Corpo de POST/PUT /api/veiculos. Mensagens de validação em português (viram fieldErrors). */
@@ -26,5 +27,8 @@ public record VeiculoRequest(
         Integer ano,
 
         @NotNull(message = "Selecione o status.")
-        StatusVeiculo status) {
+        StatusVeiculo status,
+
+        @PositiveOrZero(message = "Informe uma quilometragem maior ou igual a zero.")
+        Long quilometragem) {
 }

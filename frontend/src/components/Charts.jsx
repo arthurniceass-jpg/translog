@@ -1,16 +1,16 @@
 /** Gráficos leves em SVG/CSS puro (sem biblioteca). */
-export const CORES = ["#2563eb", "#60a5fa", "#1e3a8a", "#93c5fd", "#64748b"];
+const CORES = ["var(--primary)", "#8799b3", "#456e9a", "#a3b5cc", "#637186"];
 
 /** Cor fixa por status, para o mesmo status ter a mesma cor em qualquer gráfico. */
-export const COR_STATUS = {
-  "Disponível": "#15803d",
-  "Em uso": "#2563eb",
-  "Manutenção": "#d97706",
-  "Em viagem": "#2563eb",
+const COR_STATUS = {
+  "Disponível": "var(--success)",
+  "Em uso": "var(--primary)",
+  "Manutenção": "#bd822d",
+  "Em viagem": "var(--primary)",
   "Inativo": "#94a3b8",
-  "Aberta": "#dc2626",
-  "Em análise": "#d97706",
-  "Resolvida": "#15803d",
+  "Aberta": "var(--danger)",
+  "Em análise": "#bd822d",
+  "Resolvida": "var(--success)",
 };
 
 /** Rosca: `dados` = { rótulo: quantidade }. Cor por rótulo via COR_STATUS (ou paleta por posição). */
@@ -26,7 +26,7 @@ export function Donut({ dados, cores = CORES, rotuloCentro = "total" }) {
     <div className="donut-wrap">
       <div className="donut">
         <svg viewBox="0 0 150 150" width="150" height="150" role="img" aria-label="Gráfico de distribuição">
-          <circle cx="75" cy="75" r={R} fill="none" stroke="#eef1f5" strokeWidth="18" />
+          <circle cx="75" cy="75" r={R} fill="none" stroke="var(--bg)" strokeWidth="12" />
           {total > 0 &&
             itens.map(([k, n], i) => {
               const len = (n / total) * C;
@@ -34,7 +34,7 @@ export function Donut({ dados, cores = CORES, rotuloCentro = "total" }) {
               const el = (
                 <circle
                   key={k}
-                  cx="75" cy="75" r={R} fill="none" stroke={corDe(k, i)} strokeWidth="18"
+                  cx="75" cy="75" r={R} fill="none" stroke={corDe(k, i)} strokeWidth="12"
                   strokeDasharray={`${visivel} ${C - visivel}`}
                   strokeDashoffset={-acumulado}
                 />
@@ -83,14 +83,16 @@ export function HBars({ dados }) {
 export function ColBars({ serie }) {
   const max = Math.max(1, ...serie.map((s) => s.valor));
   return (
-    <div className="bars">
-      {serie.map((s) => (
-        <div className="bar-col" key={s.rotulo}>
-          <b>{s.valor}</b>
-          <div className="bar" style={{ height: `${(s.valor / max) * 100}%` }} />
-          <span>{s.rotulo}</span>
-        </div>
+    <ul className="bars" aria-label="Total de ocorrências por mês">
+      {serie.map(({ rotulo, valor }) => (
+        <li className="bar-col" key={rotulo}>
+          <div className="bar-plot" style={{ "--bar-size": `${valor / max * 90}%` }}>
+            <span className="bar" aria-hidden="true" />
+            <b>{valor}</b>
+          </div>
+          <span className="bar-label">{rotulo}</span>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

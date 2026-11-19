@@ -6,8 +6,16 @@
  * - `full`: ocupa a linha inteira do grid
  * - `mono`: fonte monoespaçada (placa, CPF, CNH)
  */
-export function Field({ label, name, value, onChange, error, hint, required = false, as = "input", options = [], full = false, mono = false, ...rest }) {
+export function Field({ label, name, value, onChange, error, hint, required = false, as = "input", options = [], full = false, mono = false, placeholderOption = "Selecione…", acao, ...rest }) {
   const inval = error ? " invalid" : "";
+  const mensagemId = `${name}-mensagem`;
+  const controle = {
+    id: name, name, value, onChange, required,
+    "aria-invalid": error ? true : undefined,
+    "aria-describedby": error || hint ? mensagemId : undefined,
+    ...rest,
+  };
+  const input = <input {...controle} className={"input" + (mono ? " mono" : "") + inval} />;
   return (
     <div className={"field" + (full ? " full" : "")}>
       <label htmlFor={name}>
@@ -15,19 +23,20 @@ export function Field({ label, name, value, onChange, error, hint, required = fa
       </label>
 
       {as === "select" ? (
-        <select id={name} name={name} value={value} onChange={onChange} className={"select" + inval} {...rest}>
-          <option value="">Selecione...</option>
-          {options.map((op) => (
-            <option key={op} value={op}>{op}</option>
-          ))}
+        <select {...controle} className={"select" + inval}>
+          <option value="">{placeholderOption}</option>
+          {options.map((op) => {
+            const { value: valor, label: rotulo } = typeof op === "string" ? { value: op, label: op } : op;
+            return <option key={valor} value={valor}>{rotulo}</option>;
+          })}
         </select>
       ) : as === "textarea" ? (
-        <textarea id={name} name={name} value={value} onChange={onChange} className={"textarea" + inval} {...rest} />
-      ) : (
-        <input id={name} name={name} value={value} onChange={onChange} className={"input" + (mono ? " mono" : "") + inval} {...rest} />
-      )}
+        <textarea {...controle} className={"textarea" + inval} />
+      ) : acao ? (
+        <div className="input-with-action">{input}{acao}</div>
+      ) : input}
 
-      {error ? <span className="field-error">{error}</span> : hint ? <span className="field-hint">{hint}</span> : null}
+      {error ? <span id={mensagemId} className="field-error">{error}</span> : hint ? <span id={mensagemId} className="field-hint">{hint}</span> : null}
     </div>
   );
 }
