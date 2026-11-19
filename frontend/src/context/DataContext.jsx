@@ -1,50 +1,58 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DataContext } from "./data";
 import { api } from "../services";
-import { useAuth } from "./AuthContext";
 
 /**
  * DataContext — estado global do TransLog (AV2).
  * Carrega veículos, motoristas e ocorrências da API quando há sessão e
  * expõe CRUD assíncrono. As mutações propagam ApiError para o formulário
  * mostrar a mensagem/erros de campo; a lista local é atualizada ao final.
- * Falhas de carga ficam por recurso: cada página pede só o erro dos dados que usa
- * (`erroDe("ocorrencias", "veiculos")`), então um módulo fora do ar não "suja" as outras.
  */
-const DataContext = createContext(null);
-
-const RECURSOS = ["veiculos", "motoristas", "ocorrencias"];
+const CADASTROS = ["veiculos", "motoristas", "ocorrencias"];
+const OPERACAO = ["manutencoes", "viagens", "abastecimentos", "documentos", "acompanhamentos", "responsaveis", "resolucoes"];
+const RECURSOS = [...CADASTROS, ...OPERACAO];
+const ROTULOS = { veiculos: "veículos", motoristas: "motoristas", ocorrencias: "ocorrências", manutencoes: "manutenções", viagens: "viagens", abastecimentos: "abastecimentos", documentos: "documentos", acompanhamentos: "acompanhamentos", responsaveis: "responsáveis", resolucoes: "tempos de resolução" };
 const mesmoId = (a, b) => String(a) === String(b);
 
 export function DataProvider({ children }) {
-  const { autenticado } = useAuth();
-  const [dados, setDados] = useState({ veiculos: [], motoristas: [], ocorrencias: [] });
+  const [dados, setDados] = useState(() => Object.fromEntries(RECURSOS.map((r) => [r, []])));
   const [carregando, setCarregando] = useState(true);
-  const [falhas, setFalhas] = useState({}); // { recurso: mensagem }
+  const [carregandoOperacao, setCarregandoOperacao] = useState(true);
+  const [falhas, setFalhas] = useState([]);
 
-  const carregar = useCallback(async () => {
-    setCarregando(true);
-    // Cada recurso carrega de forma independente: se um falhar (ex.: módulo
-    // ainda não publicado na API), os outros continuam funcionando.
-    const resultados = await Promise.allSettled(RECURSOS.map((r) => api.listar(r)));
-    const proximo = {};
-    const novasFalhas = {};
-    resultados.forEach((res, i) => {
-      proximo[RECURSOS[i]] = res.status === "fulfilled" ? res.value : [];
-      if (res.status === "rejected") novasFalhas[RECURSOS[i]] = res.reason.message;
-    });
-    setDados(proximo);
-    setFalhas(novasFalhas);
-    setCarregando(false);
+  const requisicao = useRef(0);
+
+  const carregar = useCallback(() => {
+    const atual = ++requisicao.current;
+    async function carregarGrupo(recursos, finalizar) {
+      const resultados = await Promise.allSettled(recursos.map((r) => api.listar(r)));
+      if (atual !== requisicao.current) return;
+
+      const proximo = {};
+      const novasFalhas = [];
+      resultados.forEach((res, i) => {
+        if (res.status === "fulfilled") proximo[recursos[i]] = res.value;
+        else novasFalhas.push(recursos[i]);
+      });
+      setDados((anteriores) => ({ ...anteriores, ...proximo }));
+      setFalhas((anteriores) => [...anteriores.filter((r) => !recursos.includes(r)), ...novasFalhas]);
+      finalizar(false);
+    }
+
+    carregarGrupo(CADASTROS, setCarregando);
+    carregarGrupo(OPERACAO, setCarregandoOperacao);
   }, []);
 
   useEffect(() => {
-    if (autenticado) carregar();
-    else {
-      setDados({ veiculos: [], motoristas: [], ocorrencias: [] });
-      setFalhas({});
-      setCarregando(true); // próximo login começa em "carregando"
-    }
-  }, [autenticado, carregar]);
+    carregar();
+    return () => { requisicao.current += 1; };
+  }, [carregar]);
+
+  const recarregar = useCallback(() => {
+    setCarregando(true);
+    setCarregandoOperacao(true);
+    carregar();
+  }, [carregar]);
 
   const value = useMemo(() => {
     const crud = (recurso) => ({
@@ -67,32 +75,54 @@ export function DataProvider({ children }) {
     const v = crud("veiculos");
     const m = crud("motoristas");
     const o = crud("ocorrencias");
+    const falhasCadastro = falhas.filter((r) => CADASTROS.includes(r));
 
-    /** Mensagem de erro dos recursos pedidos que falharam ("" se todos carregaram). */
-    const erroDe = (...recursos) => {
-      const comFalha = recursos.filter((r) => falhas[r]);
-      if (!comFalha.length) return "";
-      return `Não foi possível carregar ${comFalha.join(", ")}. ${falhas[comFalha[0]]}`;
-    };
+    async function atualizarAcompanhamento(id, pedido) {
+      const registro = await api.acompanhamento.atualizar(id, pedido);
+      setDados((s) => ({
+        ...s,
+        acompanhamentos: [...s.acompanhamentos.filter((a) => a.ocorrenciaId !== registro.ocorrenciaId), registro],
+      }));
+      return registro;
+    }
+
+    async function atualizarResolucoes() {
+      try {
+        const atuais = await api.listar("resolucoes");
+        setDados((s) => ({ ...s, resolucoes: atuais }));
+        setFalhas((s) => s.filter((r) => r !== "resolucoes"));
+      } catch {
+        setFalhas((s) => s.includes("resolucoes") ? s : [...s, "resolucoes"]);
+      }
+    }
 
     return {
       ...dados,
       carregando,
-      erroDe,
-      recarregar: carregar,
+      carregandoOperacao,
+      erro: falhasCadastro.length ? `Não foi possível carregar: ${falhasCadastro.map((nome) => ROTULOS[nome]).join(", ")}.` : "",
+      falhas,
+      registros: crud,
+      atualizarAcompanhamento,
+      recarregar,
 
       addVeiculo: v.criar, updateVeiculo: v.atualizar, removeVeiculo: v.remover, getVeiculo: v.obter,
       addMotorista: m.criar, updateMotorista: m.atualizar, removeMotorista: m.remover, getMotorista: m.obter,
-      addOcorrencia: o.criar, updateOcorrencia: o.atualizar, removeOcorrencia: o.remover, getOcorrencia: o.obter,
+      addOcorrencia: o.criar,
+      updateOcorrencia: async (id, pedido) => {
+        const retorno = await o.atualizar(id, pedido);
+        atualizarResolucoes();
+        return retorno;
+      },
+      removeOcorrencia: async (id) => {
+        await o.remover(id);
+        setDados((s) => ({
+          ...s, acompanhamentos: s.acompanhamentos.filter((a) => !mesmoId(a.ocorrenciaId, id)),
+          resolucoes: s.resolucoes.filter((r) => !mesmoId(r.ocorrenciaId, id)),
+        }));
+      }, getOcorrencia: o.obter,
     };
-  }, [dados, carregando, falhas, carregar]);
+  }, [dados, carregando, carregandoOperacao, falhas, recarregar]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
-}
-
-/** Hook de acesso ao estado global. Use em qualquer página/componente. */
-export function useData() {
-  const ctx = useContext(DataContext);
-  if (!ctx) throw new Error("useData deve ser usado dentro de <DataProvider>");
-  return ctx;
 }

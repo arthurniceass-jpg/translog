@@ -1,118 +1,106 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useData } from "../context/DataContext";
+import { Link, useLocation } from "react-router-dom";
+import { useData } from "../context/data";
+import { useFiltros } from "../hooks/useFiltros";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
-import { Badge, statusVariant } from "../components/Badge";
+import { Badge } from "../components/Badge";
+import { statusVariant } from "../components/badgeVariants";
+import { Field } from "../components/Field";
 import { Icon } from "../components/Icons";
 import { TableSkeleton, ErroCarga } from "../components/Loading";
-import { STATUS_OCORRENCIA, TIPOS_OCORRENCIA, ICONE_TIPO } from "../data/constants";
+import { STATUS_OCORRENCIA, TIPOS_OCORRENCIA } from "../data/constants";
 import { baixarCSV, dataBR, mesAno } from "../lib/format";
 
 export function Historico() {
-  const { ocorrencias, veiculos, motoristas, carregando, erroDe, recarregar } = useData();
-  const erro = erroDe("ocorrencias", "veiculos");
-  const navigate = useNavigate();
+  const { ocorrencias, veiculos, motoristas, carregando, falhas, recarregar } = useData();
+  const { pathname, search } = useLocation();
+  const { ler, alterar, limpar } = useFiltros();
+  const status = ler("status", STATUS_OCORRENCIA);
+  const tipo = ler("tipo", TIPOS_OCORRENCIA);
+  const de = ler("de");
+  const ate = ler("ate");
+  const filtrado = Boolean(status || tipo || de || ate);
+  const periodoInvalido = Boolean(de && ate && de > ate);
+  const indisponivel = falhas.includes("ocorrencias");
 
-  const [status, setStatus] = useState("");
-  const [tipo, setTipo] = useState("");
-  const [de, setDe] = useState("");
-  const [ate, setAte] = useState("");
-
-  const placaDe = (id) => veiculos.find((v) => String(v.id) === String(id))?.placa || "—";
-  const motoristaDe = (id) => motoristas.find((m) => String(m.id) === String(id))?.nome || "";
-
-  const lista = ocorrencias
+  const placas = new Map(veiculos.map((v) => [String(v.id), v.placa]));
+  const nomes = new Map(motoristas.map((m) => [String(m.id), m.nome]));
+  const lista = periodoInvalido ? [] : ocorrencias
     .filter((o) => (!status || o.status === status) && (!tipo || o.tipo === tipo) && (!de || o.data >= de) && (!ate || o.data <= ate))
-    .sort((a, b) => b.data.localeCompare(a.data));
+    .sort((a, b) => b.data.localeCompare(a.data) || b.id - a.id);
 
-  // agrupa por mês (a lista já vem ordenada, então a ordem dos grupos se mantém)
-  const grupos = lista.reduce((acc, o) => {
-    const chave = o.data.slice(0, 7);
-    (acc[chave] ||= []).push(o);
-    return acc;
-  }, {});
-
-  const filtrado = status || tipo || de || ate;
-  const limpar = () => { setStatus(""); setTipo(""); setDe(""); setAte(""); };
+  const grupos = new Map();
+  for (const ocorrencia of lista) {
+    const mes = ocorrencia.data.slice(0, 7);
+    if (!grupos.has(mes)) grupos.set(mes, []);
+    grupos.get(mes).push(ocorrencia);
+  }
 
   function exportar() {
     baixarCSV("historico-ocorrencias.csv", [
       ["Data", "Título", "Tipo", "Status", "Veículo", "Motorista", "Descrição"],
-      ...lista.map((o) => [dataBR(o.data), o.titulo, o.tipo, o.status, placaDe(o.veiculoId), motoristaDe(o.motoristaId), o.descricao]),
+      ...lista.map((o) => [
+        dataBR(o.data), o.titulo, o.tipo, o.status,
+        placas.get(String(o.veiculoId)), nomes.get(String(o.motoristaId)), o.descricao,
+      ]),
     ]);
   }
 
   return (
     <>
-      <PageHeader titulo="Histórico de ocorrências" sub="Consulte tudo o que aconteceu, com filtros por status, tipo e período.">
-        <button className="btn btn-outline" onClick={exportar} disabled={lista.length === 0}>
+      <PageHeader titulo="Histórico de ocorrências" sub="Consulte os registros por período, tipo e status.">
+        <button type="button" className="btn btn-outline" onClick={exportar} disabled={carregando || indisponivel || lista.length === 0}>
           <Icon name="download" size={17} /> Exportar CSV
         </button>
       </PageHeader>
 
-      {erro && <ErroCarga mensagem={erro} onTentar={recarregar} />}
-
-      <div className="card card-pad" style={{ marginBottom: "1.5rem" }}>
-        <div className="form-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", marginBottom: "-0.25rem" }}>
-          <div className="field">
-            <label htmlFor="h-status">Status</label>
-            <select id="h-status" className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="">Todos</option>
-              {STATUS_OCORRENCIA.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="h-tipo">Tipo</label>
-            <select id="h-tipo" className="select" value={tipo} onChange={(e) => setTipo(e.target.value)}>
-              <option value="">Todos</option>
-              {TIPOS_OCORRENCIA.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="h-de">De</label>
-            <input id="h-de" type="date" className="input" value={de} onChange={(e) => setDe(e.target.value)} />
-          </div>
-          <div className="field">
-            <label htmlFor="h-ate">Até</label>
-            <input id="h-ate" type="date" className="input" value={ate} onChange={(e) => setAte(e.target.value)} />
-          </div>
+      <section className="card card-pad history-filters" aria-label="Filtros do histórico">
+        <div className="history-filter-grid">
+          <Field label="Status" name="h-status" as="select" options={STATUS_OCORRENCIA} placeholderOption="Todos" value={status} onChange={(e) => alterar("status", e.target.value)} />
+          <Field label="Tipo" name="h-tipo" as="select" options={TIPOS_OCORRENCIA} placeholderOption="Todos" value={tipo} onChange={(e) => alterar("tipo", e.target.value)} />
+          <Field label="Data inicial" name="h-de" type="date" value={de} max={ate || undefined} onChange={(e) => alterar("de", e.target.value)} />
+          <Field label="Data final" name="h-ate" type="date" value={ate} min={de || undefined} onChange={(e) => alterar("ate", e.target.value)} error={periodoInvalido ? "Selecione uma data igual ou posterior à inicial." : ""} />
         </div>
-        {filtrado && <button className="btn btn-ghost btn-sm" onClick={limpar}><Icon name="x" size={15} /> Limpar filtros</button>}
-      </div>
+        {filtrado && <button type="button" className="btn btn-ghost btn-sm" onClick={limpar}><Icon name="x" size={16} /> Limpar filtros</button>}
+      </section>
 
       {carregando ? (
         <div className="card"><TableSkeleton /></div>
-      ) : lista.length === 0 ? (
-        <div className="card">
-          <EmptyState icon="history" titulo="Nenhuma ocorrência no período" texto="Ajuste os filtros para ver o histórico." />
-        </div>
+      ) : indisponivel ? (
+        <ErroCarga mensagem="Não foi possível carregar o histórico." onTentar={recarregar} />
+      ) : !periodoInvalido && (lista.length ? (
+        <>
+          <p className="results-count" role="status">{lista.length} {lista.length === 1 ? "ocorrência" : "ocorrências"}</p>
+          {Array.from(grupos, ([mes, itens]) => (
+            <section className="timeline-group" key={mes}>
+              <h2 className="timeline-month">{mesAno(mes + "-01")}</h2>
+              <ul className="card timeline-list">
+                {itens.map((o) => (
+                  <li key={o.id}>
+                    <Link className="t-item" to={`/ocorrencias/${o.id}`} state={{ origem: `${pathname}${search}` }}>
+                      <time className="t-date" dateTime={o.data}><b>{o.data.slice(-2)}</b><span>dia</span></time>
+                      <div className="grow">
+                        <strong>{o.titulo}</strong>
+                        <small>{[o.tipo, placas.get(String(o.veiculoId))].filter(Boolean).join(" · ")}</small>
+                      </div>
+                      <Badge variant={statusVariant(o.status)}>{o.status}</Badge>
+                      <Icon name="arrow" size={15} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </>
       ) : (
-        Object.entries(grupos).map(([chave, itens]) => (
-          <section className="timeline-group" key={chave}>
-            <h2 className="timeline-month">{mesAno(chave + "-01")} <small>{itens.length} registro(s)</small></h2>
-            {itens.map((o) => {
-              const [, , dia] = o.data.split("-");
-              const mes = new Date(o.data + "T00:00:00").toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
-              return (
-                <div key={o.id} className="card t-item" role="link" tabIndex={0}
-                  onClick={() => navigate(`/ocorrencias/${o.id}`)}
-                  onKeyDown={(e) => e.key === "Enter" && navigate(`/ocorrencias/${o.id}`)}>
-                  <div className="t-date"><b>{dia}</b><span>{mes}</span></div>
-                  <span className={"type-ico " + o.tipo}><Icon name={ICONE_TIPO[o.tipo] || "inbox"} size={18} /></span>
-                  <div className="grow">
-                    <strong>{o.titulo}</strong>
-                    <small>{o.tipo} · <span className="mono">{placaDe(o.veiculoId)}</span></small>
-                  </div>
-                  <Badge variant={statusVariant(o.status)}>{o.status}</Badge>
-                </div>
-              );
-            })}
-          </section>
-        ))
-      )}
-
-      {!carregando && <p className="muted">{lista.length} registro(s) encontrado(s)</p>}
+        <div className="card">
+          <EmptyState
+            icon="history"
+            titulo={filtrado ? "Nenhuma ocorrência com esses filtros" : "Nenhuma ocorrência no histórico"}
+            texto={filtrado ? "Altere o período, o tipo ou o status." : "Os registros da operação aparecem aqui."}
+          />
+        </div>
+      ))}
     </>
   );
 }

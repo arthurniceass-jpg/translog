@@ -34,6 +34,8 @@ public class Veiculo {
     @Column(nullable = false, length = 20)
     private StatusVeiculo status;
 
+    private Long quilometragem;
+
     protected Veiculo() {
     }
 
@@ -51,6 +53,9 @@ public class Veiculo {
     public String getModelo() { return modelo; }
     public Integer getAno() { return ano; }
     public StatusVeiculo getStatus() { return status; }
+
+    public Long getQuilometragem() { return quilometragem; }
+    public void setQuilometragem(Long quilometragem) { this.quilometragem = quilometragem; }
 
     public void setPlaca(String placa) { this.placa = placa; }
     public void setMarca(String marca) { this.marca = marca; }

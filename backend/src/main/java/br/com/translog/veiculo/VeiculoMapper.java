@@ -28,9 +28,10 @@ public class VeiculoMapper {
         v.setModelo(r.modelo().trim());
         v.setAno(r.ano());
         v.setStatus(r.status());
+        if (r.quilometragem() != null) v.setQuilometragem(r.quilometragem());
     }
 
     public VeiculoResponse paraResposta(Veiculo v) {
-        return new VeiculoResponse(v.getId(), v.getPlaca(), v.getMarca(), v.getModelo(), v.getAno(), v.getStatus());
+        return new VeiculoResponse(v.getId(), v.getPlaca(), v.getMarca(), v.getModelo(), v.getAno(), v.getStatus(), v.getQuilometragem());
     }
 }

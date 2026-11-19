@@ -32,10 +32,8 @@ export const dataBR = (iso) => (iso ? new Date(iso + "T00:00:00").toLocaleDateSt
 export const mesAno = (iso) =>
   new Date(iso + "T00:00:00").toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
-export function saudacao(data = new Date()) {
-  const h = data.getHours();
-  return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
-}
+export const normalizarBusca = (valor = "") =>
+  valor.normalize("NFD").replace(/\p{M}/gu, "").trim().toLocaleLowerCase("pt-BR");
 
 export function contarPor(lista, chave) {
   return lista.reduce((acc, item) => {
@@ -46,10 +44,14 @@ export function contarPor(lista, chave) {
 
 /** Dispara o download de um CSV (separador ; e BOM para abrir certo no Excel). */
 export function baixarCSV(nome, linhas) {
-  const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const esc = (valor) => {
+    const texto = String(valor ?? "");
+    const celula = typeof valor === "string" && /^(?:\s*[=+@-]|[\t\r\n])/.test(texto) ? `'${texto}` : texto;
+    return `"${celula.replace(/"/g, '""')}"`;
+  };
   const csv = "﻿" + linhas.map((l) => l.map(esc).join(";")).join("\r\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const a = Object.assign(document.createElement("a"), { href: url, download: nome });
   a.click();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

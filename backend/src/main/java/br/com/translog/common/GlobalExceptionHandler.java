@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -85,6 +87,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ApiError> rotaInexistente(NoResourceFoundException ex, HttpServletRequest req) {
         return erro(HttpStatus.NOT_FOUND, "Recurso não encontrado: " + req.getRequestURI(), req, null);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> arquivoGrande(MaxUploadSizeExceededException ex, HttpServletRequest req) {
+        return erro(HttpStatus.CONTENT_TOO_LARGE, "Selecione um arquivo de até 5 MB.", req, null);
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ApiError> arquivoAusente(MissingServletRequestPartException ex, HttpServletRequest req) {
+        return erro(HttpStatus.BAD_REQUEST, "Selecione um arquivo.", req, Map.of("arquivo", "Selecione um arquivo."));
     }
 
     @ExceptionHandler(Exception.class)

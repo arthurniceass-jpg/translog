@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Badge, statusVariant } from "./Badge";
+import { Badge } from "./Badge";
+import { statusVariant } from "./badgeVariants";
 import { EmptyState } from "./EmptyState";
 import { Icon } from "./Icons";
 import { ICONE_TIPO } from "../data/constants";
