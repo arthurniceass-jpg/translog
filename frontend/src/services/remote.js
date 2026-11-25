@@ -20,6 +20,18 @@ export const remote = {
     sair: () => session.clear(),
   },
 
+  acompanhamento: {
+    detalhe: (id) => http(`/ocorrencias/${id}/acompanhamento`),
+    atualizar: (id, dados) => http(`/ocorrencias/${id}/acompanhamento`, { method: "PUT", body: dados }),
+    anexar(id, arquivo) {
+      const body = new FormData();
+      body.append("arquivo", arquivo);
+      return http(`/ocorrencias/${id}/anexos`, { method: "POST", body });
+    },
+    baixar: (id, anexoId) => http(`/ocorrencias/${id}/anexos/${anexoId}`, { blob: true }),
+    excluir: (id, anexoId) => http(`/ocorrencias/${id}/anexos/${anexoId}`, { method: "DELETE" }),
+  },
+
   listar: (recurso) => http(`/${recurso}`),
   criar: (recurso, dados) => http(`/${recurso}`, { method: "POST", body: dados }),
   atualizar: (recurso, id, dados) => http(`/${recurso}/${id}`, { method: "PUT", body: dados }),

@@ -1,29 +1,41 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Icon } from "./Icons";
 
-/** Modal de confirmação de exclusão. Fecha com Esc ou clicando fora. */
 export function ConfirmDialog({ aberto, titulo, mensagem, carregando = false, onConfirmar, onCancelar }) {
-  useEffect(() => {
-    if (!aberto) return;
-    const onKey = (e) => e.key === "Escape" && onCancelar();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [aberto, onCancelar]);
+  const dialogRef = useRef(null);
 
-  if (!aberto) return null;
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (aberto && !dialog.open) dialog.showModal();
+    if (!aberto && dialog.open) dialog.close();
+  }, [aberto]);
+
+  function cancelar() {
+    if (!carregando) onCancelar();
+  }
+
   return (
-    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onCancelar()}>
-      <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-titulo">
-        <span className="dialog-ico"><Icon name="trash" size={22} /></span>
-        <h3 id="dlg-titulo">{titulo}</h3>
-        <p>{mensagem}</p>
-        <div className="form-actions">
-          <button className="btn btn-outline" onClick={onCancelar} disabled={carregando}>Cancelar</button>
-          <button className="btn btn-danger" onClick={onConfirmar} disabled={carregando}>
-            {carregando && <span className="spinner" />} Excluir
-          </button>
-        </div>
+    <dialog
+      ref={dialogRef}
+      className="dialog"
+      aria-labelledby="dlg-titulo"
+      aria-describedby="dlg-mensagem"
+      onCancel={(e) => { e.preventDefault(); cancelar(); }}
+      onClick={(e) => {
+        if (e.target !== e.currentTarget) return;
+        const { top, right, bottom, left } = e.currentTarget.getBoundingClientRect();
+        if (e.clientX < left || e.clientX > right || e.clientY < top || e.clientY > bottom) cancelar();
+      }}
+    >
+      <span className="dialog-ico"><Icon name="trash" size={22} /></span>
+      <h2 id="dlg-titulo">{titulo}</h2>
+      <p id="dlg-mensagem">{mensagem}</p>
+      <div className="form-actions">
+        <button className="btn btn-outline" onClick={cancelar} disabled={carregando}>Cancelar</button>
+        <button className="btn btn-danger" onClick={onConfirmar} disabled={carregando}>
+          {carregando && <span className="spinner" />} Excluir
+        </button>
       </div>
-    </div>
+    </dialog>
   );
 }

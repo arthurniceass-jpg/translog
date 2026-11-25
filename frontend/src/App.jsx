@@ -13,6 +13,8 @@ import { OcorrenciaForm } from "./pages/OcorrenciaForm";
 import { OcorrenciaDetalhe } from "./pages/OcorrenciaDetalhe";
 import { Dashboard } from "./pages/Dashboard";
 import { Historico } from "./pages/Historico";
+import { OperacaoRegistros } from "./pages/OperacaoRegistros";
+import { Alertas } from "./pages/Alertas";
 import { Entrar } from "./pages/Entrar";
 import { Cadastro } from "./pages/Cadastro";
 
@@ -42,6 +44,12 @@ export default function App() {
           <Route path="ocorrencias/nova" element={<OcorrenciaForm />} />
           <Route path="ocorrencias/:id" element={<OcorrenciaDetalhe />} />
           <Route path="ocorrencias/:id/editar" element={<OcorrenciaForm />} />
+
+          <Route path="manutencoes" element={<OperacaoRegistros recurso="manutencoes" />} />
+          <Route path="viagens" element={<OperacaoRegistros recurso="viagens" />} />
+          <Route path="custos" element={<OperacaoRegistros recurso="abastecimentos" />} />
+          <Route path="documentos" element={<OperacaoRegistros recurso="documentos" />} />
+          <Route path="alertas" element={<Alertas />} />
 
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="historico" element={<Historico />} />

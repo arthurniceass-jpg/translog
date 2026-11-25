@@ -1,9 +1,8 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { ToastContext } from "./toast";
 import { Icon } from "../components/Icons";
 
 /** Avisos rápidos (sucesso/erro) no canto da tela. Uso: const toast = useToast(); toast.sucesso("Salvo!") */
-const ToastContext = createContext(null);
-
 export function ToastProvider({ children }) {
   const [itens, setItens] = useState([]);
   const seq = useRef(0);
@@ -39,10 +38,4 @@ export function ToastProvider({ children }) {
       </div>
     </ToastContext.Provider>
   );
-}
-
-export function useToast() {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error("useToast deve ser usado dentro de <ToastProvider>");
-  return ctx;
 }

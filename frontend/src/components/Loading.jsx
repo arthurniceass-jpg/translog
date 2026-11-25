@@ -21,7 +21,7 @@ export function CardsSkeleton({ n = 4 }) {
 export function ErroCarga({ mensagem, onTentar }) {
   return (
     <div className="alert alert-danger">
-      <span style={{ flex: 1 }}>{mensagem}</span>
+      <span role="alert" style={{ flex: 1 }}>{mensagem}</span>
       <button className="btn btn-outline btn-sm" onClick={onTentar}>Tentar de novo</button>
     </div>
   );

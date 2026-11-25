@@ -1,10 +1,6 @@
-/**
- * Logo do TransLog: ícone de caminhão em quadrado azul + nome.
- * `onDark` inverte as cores para uso sobre fundo azul/escuro.
- */
-export function Logo({ onDark = false }) {
-  const fundo = onDark ? "#ffffff" : "var(--primary)";
-  const traco = onDark ? "var(--primary-dark)" : "#ffffff";
+export function Logo() {
+  const fundo = "var(--primary)";
+  const traco = "#ffffff";
 
   return (
     <div className="logo">
@@ -14,7 +10,7 @@ export function Logo({ onDark = false }) {
         <circle cx="11" cy="22" r="2.4" fill={fundo} stroke={traco} strokeWidth="1.6" />
         <circle cx="22" cy="22" r="2.4" fill={fundo} stroke={traco} strokeWidth="1.6" />
       </svg>
-      <span className={"logo-text" + (onDark ? " on-dark" : "")}>
+      <span className="logo-text">
         Trans<span>Log</span>
       </span>
     </div>
